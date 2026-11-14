@@ -317,6 +317,7 @@ function renderOptions() {
                                    { noHay: $('no-hay').checked });
   state.results = results; // kept so "Save to My farm" saves exactly what is on screen
   state.ask = null;         // results changed, so the AI helper starts a fresh chat next time
+  renderHelperContext();
   const best = Math.max(...results.slice(1).map(r => r.total));
 
   $('risk-strip').innerHTML = monthStrip(results[0], true);
@@ -430,7 +431,7 @@ function findingSentence(results) {
 // ---------- pages ----------
 // The site is one HTML file with several <section class="page">. The #hash in the address
 // (#home, #field, #compare...) picks which one shows, so Back buttons and bookmarks work.
-const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'science'];
+const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'science', 'ask'];
 const STEPS = ['field', 'soil', 'year', 'compare'];
 
 function showPage() {
@@ -452,6 +453,7 @@ function showPage() {
   if (state.map && id === 'field') { state.map.invalidateSize(); state.map.fitBounds(state.mapBounds); }
   Object.values(state.charts).forEach(c => c && c.resize());
   if (id === 'myfarm') renderSaved();
+  if (id === 'ask') renderHelperContext();
 }
 
 // ---------- My farm: saved checks ----------
@@ -629,6 +631,14 @@ function resultsForHelper() {
     `SOIL CHECK:\n${text('soil-check')}`,
     ...options,
   ].join('\n\n');
+}
+
+// Tells the farmer which field and rotation the helper is answering about.
+function renderHelperContext() {
+  if (!state.results || !state.field) { $('helper-context').textContent = 'Loading your field…'; return; }
+  $('helper-context').innerHTML = `Answering about <strong>${esc(state.field.name)}</strong>, growing ` +
+    `<strong>${esc(state.results[0].rotation.name)}</strong>, with your current sliders. ` +
+    `<a href="#compare">Change these on the Compare page</a>.`;
 }
 
 function addMessage(who, words) {

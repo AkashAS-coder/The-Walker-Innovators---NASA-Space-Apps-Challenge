@@ -454,10 +454,14 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
 .bottom { background: var(--soil-dark); color: #efe4d2; margin-top: 0; }
 .bottom a { color: #f3d48c; }
 
-@media (max-width: 900px) {
+/* Menu button below 1080px: the six links plus Sign in no longer fit on one line. */
+.brand, .nav-links a { white-space: nowrap; }
+@media (max-width: 1080px) {
   .nav-toggle { display: inline-flex; align-items: center; }
   .nav-links { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; padding: .5rem 16px 1rem; background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: var(--shadow); }
   .nav-links.open { display: flex; }
+}
+@media (max-width: 900px) {
   .photo-row, .how-steps { grid-template-columns: 1fr 1fr; }
   .how-help { grid-template-columns: 1fr; }
 }
@@ -529,3 +533,6 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
 @keyframes dialog-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(.98); } }
 @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+.helper-context { margin: 0 0 .4rem; padding: .6rem .8rem; border-radius: 8px; background: var(--green-soft); }
+[data-page="ask"] .helper { margin-top: .6rem; max-width: 760px; }
+[data-page="ask"] .page-head .tag { vertical-align: middle; }

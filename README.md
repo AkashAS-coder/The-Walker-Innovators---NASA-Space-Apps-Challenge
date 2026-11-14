@@ -20,6 +20,8 @@ Then open http://localhost:8000.
 
 To publish it, turn on GitHub Pages for the `main` branch (Settings → Pages). It is a plain static site, so there is no build step.
 
+After changing any file in `js/` or `css/`, change the `?v=` number on the `<script>` and stylesheet links at the bottom and top of `index.html`. GitHub Pages lets browsers keep old files for 10 minutes, and a new page with old JavaScript can leave buttons doing nothing.
+
 ## What it does
 
 1. **Check your soil**: pick your field on a map or from a list (Henry County, VA, and a second region near Fallon, NV) and what you grow now. The four warning signs light up for your current rotation, with the NASA or USDA number behind each one.
@@ -58,7 +60,7 @@ node --test tests/run.test.js
 ## Sign-in and the AI helper (optional)
 
 - **Sign in** (the "Sign in" button at the top of every page opens a pop-up) uses Firebase Authentication, with Google or an email and password. When you're signed in, the checks you save on "My farm" are also stored in Cloud Firestore at `users/{your id}/checks/`, so they follow you to any device. We store only your email (inside Firebase Authentication) and the checks you choose to save. You never need an account: without one, checks save in your browser as before.
-- **"Ask about these results"** (bottom of step 4) is a chatbot that uses Google Gemini through Firebase AI Logic. It gets a text copy of what the page shows, including the scores, the five boxes and the weather and soil cards. It is told to explain only those numbers, to say when it doesn't know, and never to say what to plant. It does not change any score: scores come from the fixed rules in `js/scoring.js`. Its answers are labeled "AI answer" and can be wrong.
+- **"Ask AI"** (its own tab in the menu) is a chatbot that uses Google Gemini through Firebase AI Logic. It gets a text copy of what the page shows, including the scores, the five boxes and the weather and soil cards. It is told to explain only those numbers, to say when it doesn't know, and never to say what to plant. It does not change any score: scores come from the fixed rules in `js/scoring.js`. Its answers are labeled "AI answer" and can be wrong.
 
 **Turning these on (one-time, about 10 minutes, done by the repo owner):**
 
