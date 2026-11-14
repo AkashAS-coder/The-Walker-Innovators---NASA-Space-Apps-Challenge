@@ -22,6 +22,20 @@ Every dataset, web page and library used in this project.
 | NASA Earth Observatory, "Measuring Vegetation (NDVI & EVI)" | NDVI meaning and the bare-ground threshold | https://earthobservatory.nasa.gov/features/MeasuringVegetation |
 | CRESS grower survey (team's own, 16 anonymous responses, Nov 2026) | Problem statement only (slides). Not in the repo. | — |
 
+## Photos
+
+All from the USDA Natural Resources Conservation Service (US government work, public domain), downloaded from Wikimedia Commons and resized. Stored in `images/`.
+
+| File | Original | Link |
+| --- | --- | --- |
+| images/hero-field.jpg (shown mirrored) | Soybean Field with Healthy Soil (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Soybean_Field_with_Healthy_Soil_(9316804120).jpg |
+| images/erosion.jpg | Sheet erosion in an area of Coto soils (USDA NRCS, 2019) | https://commons.wikimedia.org/wiki/File:Sheet_erosion_in_an_area_of_Coto_soils_(20190402-SR-NRCS-001).jpg |
+| images/cover-crop.jpg | Soybeans coming up in a rye cover crop, May 2016 (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Soybeans_coming_up_in_a_rye_cover_crop_May_2016_(29614917692).jpg |
+| images/residue.jpg | Corn in Residue with Healthy Soil (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Corn_in_Residue_with_Healthy_Soil_(9314025147).jpg |
+| images/soil-profiles.jpg | Three soil profiles taken in central Iowa, slightly vs severely eroded (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Three_soil_profile%27s_taken_in_Idaho.jpg |
+
+The "Why cover matters" diagram on the How it works page is our own drawing (inline SVG).
+
 ## Software and libraries
 
 | Library | Version | License | Link |
@@ -32,3 +46,6 @@ Every dataset, web page and library used in this project.
 | Python 3 standard library | 3.x | PSF | Fetch scripts |
 | taste-skill (design guidance only; no code or assets copied) | — | MIT | https://github.com/Leonxlnx/taste-skill |
 | Node.js built-in test runner | 18+ | MIT | Tests only |
+| Fraunces and Inter fonts (Google Fonts) | — | SIL Open Font License 1.1 | https://fonts.google.com/specimen/Fraunces · https://fonts.google.com/specimen/Inter |
+| Lucide icon shapes (map pin, layers, sliders, bookmark), redrawn inline | — | ISC | https://lucide.dev/ |
+| Chama Verde (another NASA Space Apps team's site): layout idea only for the home page (sand and deep-green colors, big-number row, dark "How it works." band, closing button). No code, text or assets copied | — | — | https://chama-verde.netlify.app/ |

@@ -4,37 +4,200 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Field Shift: Soil Erosion Check</title>
-  <meta name="description" content="Is your field's soil wearing out? Check four soil warning signs from 20 years of NASA Earth data, then compare crop cycles that could fix them. Built by The Walker Innovators for the NASA Space Apps Challenge 2026.">
+  <meta name="description" content="Is your field's topsoil washing away? A free soil check built on 20 years of NASA Earth data, with three crop cycles compared side by side. Built by The Walker Innovators for the NASA Space Apps Challenge 2026.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%228%22 fill=%22%232f6b3a%22/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%228%22 fill=%22%235b3a21%22/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="top">
-    <div class="wrap">
-      <p class="eyebrow">Field Shift · Soil Erosion Check</p>
-      <h1>Is your field's topsoil washing away?</h1>
-      <p class="lead">Soil erosion is topsoil carried off by rain, and it is the main way farm soil wears out. We look at your field through the same equation USDA scientists use for it, called RUSLE, filled in with 20 years of NASA satellite and weather data. Then we compare crop cycles that keep more of your soil in place. Every number shows where it came from and what we still don't know.</p>
-      <nav class="steps-bar" aria-label="Steps">
-        <a href="#step-check"><span class="num">1</span> Check your soil</a>
-        <a href="#step-cycle"><span class="num">2</span> See the cycle</a>
-        <a href="#step-compare"><span class="num">3</span> Compare fixes</a>
-      </nav>
+  <!-- Top navigation: one link per page. app.js shows one page at a time from the #hash. -->
+  <nav class="nav" aria-label="Main">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#home"><span class="brand-dot" aria-hidden="true"></span>Field Shift</a>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links">Menu</button>
+      <div class="nav-links" id="nav-links">
+        <a href="#home" data-nav="home">Home</a>
+        <a href="#how" data-nav="how">How it works</a>
+        <a href="#field" data-nav="field soil year compare">Check my field</a>
+        <a href="#myfarm" data-nav="myfarm">My farm</a>
+        <a href="#science" data-nav="science">The science</a>
+      </div>
     </div>
-  </header>
+  </nav>
 
-  <div class="notice wrap" role="note">
-    <strong>This tool supports your decision. It does not replace your judgment or your local extension agent.</strong>
-  </div>
+  <p id="loading" class="loading wrap">Loading saved NASA data…</p>
+  <p id="load-error" class="error wrap" hidden></p>
 
-  <main class="wrap">
-    <p id="loading" class="loading">Loading saved NASA data…</p>
-    <p id="load-error" class="error" hidden></p>
+  <main>
+    <!-- ========== HOME ========== -->
+    <section class="page" data-page="home">
+      <div class="hero">
+        <div class="wrap hero-inner">
+          <p class="eyebrow">Free soil check for your field</p>
+          <h1>Is your topsoil washing away?</h1>
+          <p class="hero-lead">See how well your field is covered when heavy rain hits, then compare crop cycles that hold more soil in place.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#field">Check my field</a>
+            <a class="btn btn-ghost" href="#how">How it works</a>
+          </div>
+        </div>
+      </div>
 
-    <!-- Step 1: the soil health check -->
-    <section id="step-check" class="step hero-step">
-      <h2><span class="num">1</span> Check your soil</h2>
-      <div class="two-col">
+      <!-- Big numbers: each one is a plain fact about the data or the tool -->
+      <div class="wrap">
+        <dl class="stat-row">
+          <div><dt>21 years</dt><dd>of daily NASA weather for your field</dd></div>
+          <div><dt>16 days</dt><dd>between NASA satellite pictures of your field's greenness</dd></div>
+          <div><dt>3 cycles</dt><dd>compared side by side, including yours</dd></div>
+          <div><dt>No login</dt><dd>free, and nothing you enter leaves your computer</dd></div>
+        </dl>
+      </div>
+
+      <div class="wrap band-light">
+        <h2 class="band-title">Heavy rain on bare ground carries your topsoil away.</h2>
+        <div class="photo-row">
+          <figure class="photo-card">
+            <img src="images/erosion.jpg" alt="A tilled bare field with rills where rain has carried soil away" loading="lazy">
+            <figcaption><strong>Bare soil washes away</strong><span>Heavy rain on an open field carves soil off.</span></figcaption>
+          </figure>
+          <figure class="photo-card">
+            <img src="images/cover-crop.jpg" alt="Young soybean plants growing up through a standing rye cover crop" loading="lazy">
+            <figcaption><strong>Cover holds it in place</strong><span>Plants and roots shield the soil from rain.</span></figcaption>
+          </figure>
+          <figure class="photo-card">
+            <img src="images/residue.jpg" alt="Corn rows with last year's crop residue covering the soil between them" loading="lazy">
+            <figcaption><strong>Your crop cycle decides</strong><span>We show which cycle keeps your field covered.</span></figcaption>
+          </figure>
+        </div>
+
+        <div class="data-strip" aria-label="Data sources">
+          <span>Built on</span>
+          <span class="tag">NASA POWER</span>
+          <span class="tag tag-modis">NASA MODIS</span>
+          <span class="tag tag-usda">USDA soil survey</span>
+          <span class="tag tag-usda">USDA CropScape</span>
+        </div>
+      </div>
+
+      <!-- Dark band: the three steps in one glance -->
+      <div class="band-dark">
+        <div class="wrap">
+          <h2 class="band-title">How it works.</h2>
+          <ol class="lined-steps">
+            <li><span class="n">01</span><h3>Pick your field</h3><p>Click it on the map and choose what you grow now.</p></li>
+            <li><span class="n">02</span><h3>See your soil check</h3><p>Which months your soil sits bare when heavy rain comes, from NASA data.</p></li>
+            <li><span class="n">03</span><h3>Compare and save</h3><p>Three crop cycles ranked by what matters to you. Save them to My farm.</p></li>
+          </ol>
+          <a class="text-link" href="#how">See the full walkthrough →</a>
+        </div>
+      </div>
+
+      <!-- Closing call to action -->
+      <div class="wrap band-cta">
+        <h2 class="band-title">See what your field needs.</h2>
+        <p class="muted">About five minutes. Take the results to your extension agent.</p>
+        <a class="btn btn-primary" href="#field">Check my field</a>
+      </div>
+    </section>
+
+    <!-- ========== HOW IT WORKS ========== -->
+    <section class="page wrap" data-page="how" hidden>
+      <header class="page-head">
+        <p class="eyebrow">How it works</p>
+        <h2>Four steps, about five minutes</h2>
+      </header>
+
+      <ol class="how-steps">
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <h3>Pick your field</h3>
+          <p>Choose it on the map and tell us what you grow.</p>
+        </li>
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+          <h3>See your soil check</h3>
+          <p>Four warning signs from 20 years of NASA data.</p>
+        </li>
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
+          <h3>Compare three cycles</h3>
+          <p>Your rotation plus two others, ranked by what matters to you.</p>
+        </li>
+        <li>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+          <h3>Save and check back</h3>
+          <p>Keep your results on My farm and compare over time.</p>
+        </li>
+      </ol>
+
+      <div class="diagram-card">
+        <h3>Why cover matters</h3>
+        <!-- Our own drawing: the same rain on a bare slope and a covered slope. -->
+        <svg class="diagram" viewBox="0 0 640 230" role="img" aria-labelledby="dg-title dg-desc">
+          <title id="dg-title">Rain on bare soil versus covered soil</title>
+          <desc id="dg-desc">Left: rain hits bare soil on a slope and carries soil downhill. Right: rain lands on plants, soaks in, and roots hold the soil.</desc>
+          <g class="rain">
+            <line x1="40" y1="20" x2="34" y2="44"/><line x1="90" y1="14" x2="84" y2="38"/><line x1="140" y1="22" x2="134" y2="46"/>
+            <line x1="190" y1="12" x2="184" y2="36"/><line x1="240" y1="20" x2="234" y2="44"/><line x1="280" y1="10" x2="274" y2="34"/>
+            <line x1="360" y1="20" x2="354" y2="44"/><line x1="410" y1="14" x2="404" y2="38"/><line x1="460" y1="22" x2="454" y2="46"/>
+            <line x1="510" y1="12" x2="504" y2="36"/><line x1="560" y1="20" x2="554" y2="44"/><line x1="600" y1="10" x2="594" y2="34"/>
+          </g>
+          <!-- bare slope -->
+          <path class="soil" d="M10 90 L310 150 L310 200 L10 200 Z"/>
+          <path class="runoff" d="M40 100 C110 112 170 128 300 150"/>
+          <circle class="clod" cx="120" cy="114" r="4"/><circle class="clod" cx="190" cy="128" r="3"/><circle class="clod" cx="250" cy="139" r="4"/>
+          <path class="arrow" d="M230 160 L290 172 M280 164 L292 172 L280 178"/>
+          <!-- covered slope -->
+          <path class="soil" d="M330 90 L630 150 L630 200 L330 200 Z"/>
+          <g class="plants">
+            <path d="M370 96 q-8 -26 0 -40 q8 14 0 40"/><path d="M420 106 q-8 -26 0 -40 q8 14 0 40"/>
+            <path d="M470 116 q-8 -26 0 -40 q8 14 0 40"/><path d="M520 126 q-8 -26 0 -40 q8 14 0 40"/>
+            <path d="M570 136 q-8 -26 0 -40 q8 14 0 40"/>
+          </g>
+          <g class="roots">
+            <path d="M370 98 l-6 40 M370 98 l8 34 M370 98 l0 46"/><path d="M420 108 l-6 38 M420 108 l8 32 M420 108 l0 44"/>
+            <path d="M470 118 l-6 36 M470 118 l8 30 M470 118 l0 42"/><path d="M520 128 l-6 34 M520 128 l8 28 M520 128 l0 40"/>
+            <path d="M570 138 l-6 30 M570 138 l8 26 M570 138 l0 36"/>
+          </g>
+          <g class="soak"><path d="M445 150 l0 22 M439 166 l6 8 l6 -8"/><path d="M545 168 l0 18 M539 180 l6 8 l6 -8"/></g>
+          <text x="160" y="222" text-anchor="middle">Bare: rain carries soil off</text>
+          <text x="480" y="222" text-anchor="middle">Covered: rain soaks in, roots hold soil</text>
+        </svg>
+      </div>
+
+      <div class="how-help">
+        <figure class="photo-card wide">
+          <img src="images/soil-profiles.jpg" alt="Three soil cores from central Iowa: slightly eroded soil with a thick dark topsoil, and severely eroded soil where the dark layer is gone" loading="lazy">
+          <figcaption><strong>Lost topsoil does not come back fast</strong><span>Soil cores from Iowa: slightly eroded (dark topsoil) next to severely eroded. Photo: USDA NRCS.</span></figcaption>
+        </figure>
+        <div>
+          <h3>How it helps you</h3>
+          <ul class="checklist">
+            <li>Shows the months your soil sits bare when heavy rain comes.</li>
+            <li>Compares your rotation with two others, side by side.</li>
+            <li>Shows the evidence, and what we don't know, for every option.</li>
+            <li>Gives you questions to take to your extension agent.</li>
+          </ul>
+          <a class="btn btn-primary" href="#field">Start with my field</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== STEP 1: YOUR FIELD ========== -->
+    <section class="page wrap" data-page="field" hidden>
+      <ol class="progress" aria-label="Steps">
+        <li data-step="field"><a href="#field">1 Your field</a></li>
+        <li data-step="soil"><a href="#soil">2 Soil check</a></li>
+        <li data-step="year"><a href="#year">3 Your year</a></li>
+        <li data-step="compare"><a href="#compare">4 Compare</a></li>
+      </ol>
+      <header class="page-head">
+        <h2>Tell us about your field</h2>
+      </header>
+      <div class="two-col panel-card">
         <div class="field-form">
           <label for="field-select">Your field</label>
           <select id="field-select"></select>
@@ -42,7 +205,7 @@
 
           <label for="rotation-select">What you grow now</label>
           <select id="rotation-select"></select>
-          <p class="small muted">Pick the closest match. The years below show what satellites recorded on this field.</p>
+          <p class="small muted">Pick the closest match.</p>
 
           <div class="checks">
             <label><input type="checkbox" id="irrigated"> My field is irrigated</label>
@@ -51,45 +214,86 @@
         <div id="map" class="map" aria-label="Map of available fields. Click a pin to pick a field."></div>
       </div>
 
-      <div class="history-row">
-        <p class="small"><strong>What you've grown</strong> <span class="tag tag-usda">USDA CropScape</span></p>
+      <div class="history-row panel-card">
+        <p class="small"><strong>What satellites recorded on this field</strong> <span class="tag tag-usda">USDA CropScape</span></p>
         <div id="history" class="history"></div>
       </div>
 
-      <div class="headline" id="headline" aria-live="polite"></div>
-
-      <div class="rusle">
-        <h3>The science: how much soil rain carries away</h3>
-        <p class="equation" aria-label="Soil loss equals rain power times soil erodibility times slope times cover times conservation practices">
-          <span>A</span> = <span>R</span> × <span>K</span> × <span>LS</span> × <span class="c">C</span> × <span>P</span>
-        </p>
-        <p class="small">The <strong>Revised Universal Soil Loss Equation (RUSLE)</strong> from the USDA Agricultural Research Service: soil loss (A) comes from five factors multiplied together. Four of them belong to your land and weather. <strong>Only C, cover, changes with what you plant.</strong></p>
-        <div id="rusle-factors" class="factors"></div>
+      <div class="step-nav">
+        <span></span>
+        <a class="btn btn-primary" href="#soil">See my soil check</a>
       </div>
+    </section>
+
+    <!-- ========== STEP 2: SOIL CHECK ========== -->
+    <section class="page wrap" data-page="soil" hidden>
+      <ol class="progress" aria-label="Steps">
+        <li data-step="field"><a href="#field">1 Your field</a></li>
+        <li data-step="soil"><a href="#soil">2 Soil check</a></li>
+        <li data-step="year"><a href="#year">3 Your year</a></li>
+        <li data-step="compare"><a href="#compare">4 Compare</a></li>
+      </ol>
+      <div class="headline panel-card" id="headline" aria-live="polite"></div>
 
       <h3>Four warning signs for your soil</h3>
       <div id="soil-check" class="signs"></div>
-      <p class="small muted">The first three signs follow published soil health advice from USDA NRCS, SARE and Virginia Cooperative Extension: keep the soil covered, keep living roots in the ground, add legumes. The fourth, thirsty crops in drying months, is our own check built on NASA soil-wetness data. See "Why we believe this" below.</p>
+      <p class="small muted">The first three follow USDA NRCS, SARE and Virginia Cooperative Extension soil health advice. The fourth is our own check built on NASA soil-wetness data.</p>
+
+      <details class="rusle panel-card">
+        <summary>The science behind it: the soil erosion equation (RUSLE)</summary>
+        <p class="equation" aria-label="Soil loss equals rain power times soil erodibility times slope times cover times conservation practices">
+          <span>A</span> = <span>R</span> × <span>K</span> × <span>LS</span> × <span class="c">C</span> × <span>P</span>
+        </p>
+        <p class="small">USDA's <strong>Revised Universal Soil Loss Equation</strong>: soil loss (A) comes from five factors multiplied together. <strong>Only C, cover, changes with what you plant.</strong></p>
+        <div id="rusle-factors" class="factors"></div>
+      </details>
+
+      <div class="step-nav">
+        <a class="btn btn-ghost" href="#field">Back</a>
+        <a class="btn btn-primary" href="#year">See my year</a>
+      </div>
     </section>
 
-    <!-- Step 2: the cycle, month by month -->
-    <section id="step-cycle" class="step">
-      <h2><span class="num">2</span> See the cycle that's wearing it down</h2>
-      <p class="muted">Each box is a month of what you grow now. Green means a crop is growing in every year of your rotation; tan means the ground is bare in some years. Warnings mark bare ground in heavy-rain months and crops at risk.</p>
-      <div id="risk-strip" class="month-strip"></div>
-      <figure class="chart-box">
+    <!-- ========== STEP 3: YOUR YEAR ========== -->
+    <section class="page wrap" data-page="year" hidden>
+      <ol class="progress" aria-label="Steps">
+        <li data-step="field"><a href="#field">1 Your field</a></li>
+        <li data-step="soil"><a href="#soil">2 Soil check</a></li>
+        <li data-step="year"><a href="#year">3 Your year</a></li>
+        <li data-step="compare"><a href="#compare">4 Compare</a></li>
+      </ol>
+      <header class="page-head">
+        <h2>Your year, month by month</h2>
+        <p class="muted">Green: a crop is growing. Tan: the ground is bare in some years. Warnings mark bare ground in heavy-rain months.</p>
+      </header>
+      <div id="risk-strip" class="month-strip panel-card"></div>
+      <figure class="chart-box panel-card">
         <figcaption>What satellites saw: how green your field is, month by month <span class="tag tag-modis">MODIS NDVI</span></figcaption>
         <canvas id="ndvi-chart" height="110"></canvas>
         <p class="small muted" id="ndvi-note"></p>
       </figure>
+      <p class="small muted"><strong>NDVI</strong> is a satellite measure of how green the ground is, from about 0 (bare soil) to 1 (thick green crop).</p>
+
+      <div class="step-nav">
+        <a class="btn btn-ghost" href="#soil">Back</a>
+        <a class="btn btn-primary" href="#compare">Compare crop cycles</a>
+      </div>
     </section>
 
-    <!-- Step 3: priorities and the three options -->
-    <section id="step-compare" class="step">
-      <h2><span class="num">3</span> Compare three cycles that could fix it</h2>
+    <!-- ========== STEP 4: COMPARE ========== -->
+    <section class="page wrap" data-page="compare" hidden>
+      <ol class="progress" aria-label="Steps">
+        <li data-step="field"><a href="#field">1 Your field</a></li>
+        <li data-step="soil"><a href="#soil">2 Soil check</a></li>
+        <li data-step="year"><a href="#year">3 Your year</a></li>
+        <li data-step="compare"><a href="#compare">4 Compare</a></li>
+      </ol>
+      <header class="page-head">
+        <h2>Compare three crop cycles</h2>
+      </header>
       <p id="finding" class="finding" aria-live="polite"></p>
 
-      <div class="priorities">
+      <div class="priorities panel-card">
         <h3>What matters to you</h3>
         <p class="small muted">Move the sliders. The options re-rank right away.</p>
         <div id="sliders" class="sliders"></div>
@@ -109,13 +313,37 @@
         </details>
       </div>
 
-      <p class="small muted">Your current rotation plus the two alternatives that best fit your field and your priorities. Fit scores run from 0 to 100 and come from the rules in "How scoring works".</p>
+      <p class="small muted">Fit scores run from 0 to 100. See "The science" for the rules.</p>
       <div id="options" class="options"></div>
+
+      <div class="notice" role="note">
+        <strong>This tool supports your decision. It does not replace your judgment or your local extension agent.</strong>
+      </div>
+
+      <div class="step-nav">
+        <a class="btn btn-ghost" href="#year">Back</a>
+        <button type="button" class="btn btn-primary" id="save-check">Save to My farm</button>
+      </div>
+      <p id="save-msg" class="small save-msg" aria-live="polite"></p>
     </section>
 
-    <!-- Research and details -->
-    <section id="research" class="step">
-      <h2>Why we believe this</h2>
+    <!-- ========== MY FARM ========== -->
+    <section class="page wrap" data-page="myfarm" hidden>
+      <header class="page-head">
+        <p class="eyebrow">My farm</p>
+        <h2>Your saved soil checks</h2>
+        <p class="muted">Save a check on step 4, then come back any time to reopen it or see how it changed.</p>
+      </header>
+      <div id="saved-list" class="saved-list"></div>
+      <p class="small muted">Saved on this device only. Nothing is sent anywhere. Account sign-in, so you can see your farm on any device, is planned.</p>
+    </section>
+
+    <!-- ========== THE SCIENCE ========== -->
+    <section class="page wrap" data-page="science" hidden>
+      <header class="page-head">
+        <p class="eyebrow">The science</p>
+        <h2>Why we believe this</h2>
+      </header>
       <div class="principle rusle-why">
         <h3>RUSLE, the soil erosion equation</h3>
         <p>USDA has used the Universal Soil Loss Equation to plan soil conservation on farms since the 1960s; the revised version (RUSLE) is in USDA Agriculture Handbook 703 (Renard and others, 1997). It says soil loss = rain erosivity (R) × soil erodibility (K) × slope (LS) × cover (C) × conservation practices (P). Rain, soil and slope are mostly fixed for a field, so cover is the main factor a farmer controls through the crop cycle.</p>
@@ -185,7 +413,7 @@
         </dl>
       </details>
 
-      <details class="panel" id="how">
+      <details class="panel" id="scoring-rules">
         <summary>How scoring works</summary>
         <p>No black box. Each option gets five sub-scores from simple rules. Your sliders decide how much each counts. The four warning signs are separate yes-or-no checks, described above.</p>
         <ul class="rules">
@@ -208,6 +436,7 @@
           <li><strong>RUSLE</strong>: Renard, K.G. and others, 1997, <em>Predicting Soil Erosion by Water: A Guide to Conservation Planning with the Revised Universal Soil Loss Equation (RUSLE)</em>, USDA Agriculture Handbook 703. Chapter record: <a href="https://www.ars.usda.gov/research/publications/publication/?seqNo115=92824">ars.usda.gov</a></li>
           <li><strong>USDA NRCS soil health principles</strong> ("reduce disturbance, maximize cover, promote biodiversity, and support living roots"): <a href="https://www.nrcs.usda.gov/conservation-basics/soil/soil-health">nrcs.usda.gov soil health</a></li>
           <li><strong>Crop traits</strong>: Virginia Cooperative Extension Agronomy Handbook and SARE <em>Managing Cover Crops Profitably</em>. Each row links to its source in <a href="data/crops.csv">data/crops.csv</a>.</li>
+          <li><strong>Photos</strong>: USDA NRCS, public domain, via Wikimedia Commons. Details in SOURCES.md.</li>
         </ul>
         <p class="small muted">Full list with licenses in SOURCES.md.</p>
       </details>
@@ -217,7 +446,7 @@
   <footer class="bottom">
     <div class="wrap">
       <p><strong>This supports your decision. It does not replace your judgment or your extension agent.</strong></p>
-      <p class="small">Made by The Walker Innovators for the NASA Space Apps Challenge 2026, "Field Shift: Adapting Farms with NASA Data." Map data © OpenStreetMap contributors.</p>
+      <p class="small">Made by The Walker Innovators for the NASA Space Apps Challenge 2026, "Field Shift: Adapting Farms with NASA Data." Photos: USDA NRCS (public domain). Map data © OpenStreetMap contributors.</p>
     </div>
   </footer>
 
@@ -225,6 +454,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="js/indicators.js"></script>
   <script src="js/scoring.js"></script>
+  <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

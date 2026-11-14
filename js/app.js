@@ -122,7 +122,8 @@ function buildMap() {
     L.marker([f.lat, f.lon]).addTo(map)
       .bindTooltip(`${f.name}<br>${f.place}`)
       .on('click', () => { $('field-select').value = f.id; selectField(f.id); }));
-  map.fitBounds(L.featureGroup(markers).getBounds().pad(0.3));
+  state.mapBounds = L.featureGroup(markers).getBounds().pad(0.3);
+  map.fitBounds(state.mapBounds);
   state.map = map;
 }
 
@@ -314,6 +315,7 @@ function renderOptions() {
   const field = currentField();
   const results = compareRotations(state.rotations, $('rotation-select').value, field, weights(),
                                    { noHay: $('no-hay').checked });
+  state.results = results; // kept so "Save to My farm" saves exactly what is on screen
   const best = Math.max(...results.slice(1).map(r => r.total));
 
   $('risk-strip').innerHTML = monthStrip(results[0], true);
@@ -424,4 +426,115 @@ function findingSentence(results) {
          `${current.total} for what you grow now${why}.${fixes} Take it to your extension agent before changing anything.`;
 }
 
+// ---------- pages ----------
+// The site is one HTML file with several <section class="page">. The #hash in the address
+// (#home, #field, #compare...) picks which one shows, so Back buttons and bookmarks work.
+const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'science'];
+const STEPS = ['field', 'soil', 'year', 'compare'];
+
+function showPage() {
+  const id = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+  document.querySelectorAll('.page').forEach(p => { p.hidden = p.dataset.page !== id; });
+  document.querySelectorAll('[data-nav]').forEach(a =>
+    a.classList.toggle('on', a.dataset.nav.split(' ').includes(id)));
+  document.querySelectorAll('.progress li').forEach(li => {
+    li.classList.toggle('on', li.dataset.step === id);
+    li.classList.toggle('done', STEPS.indexOf(li.dataset.step) < STEPS.indexOf(id));
+  });
+  $('nav-links').classList.remove('open');
+  $('nav-toggle').setAttribute('aria-expanded', 'false');
+  window.scrollTo(0, 0);
+  // The map and charts measure their size when drawn; tell them their page is now visible.
+  // A map drawn while hidden zooms out to the whole world, so re-fit it to the fields.
+  if (state.map && id === 'field') { state.map.invalidateSize(); state.map.fitBounds(state.mapBounds); }
+  Object.values(state.charts).forEach(c => c && c.resize());
+  if (id === 'myfarm') renderSaved();
+}
+
+// ---------- My farm: saved checks ----------
+
+function saveCurrentCheck() {
+  if (!state.results) return;
+  const [current, ...alts] = state.results;
+  const check = {
+    id: Date.now(),
+    savedAt: new Date().toISOString(),
+    fieldId: state.field.id, fieldName: state.field.name, place: state.field.place,
+    rotationId: $('rotation-select').value, rotationName: current.rotation.name,
+    irrigated: $('irrigated').checked, texture: $('texture-select').value,
+    noHay: $('no-hay').checked, sellsForage: $('sells-forage').checked,
+    weights: weights(),
+    cover: Math.round(current.sub.erosion.score),
+    warningsOn: current.warnings.filter(w => w.lit).length,
+    options: [current, ...alts].map(r => ({ name: r.rotation.name, total: r.total, isCurrent: r.isCurrent })),
+  };
+  $('save-msg').innerHTML = saveCheck(check)
+    ? 'Saved. Find it any time on <a href="#myfarm">My farm</a>.'
+    : 'Could not save: this browser is blocking storage (private window?).';
+}
+
+const dateText = iso => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+function renderSaved() {
+  const checks = listChecks();
+  if (!checks.length) {
+    $('saved-list').innerHTML = `<div class="empty panel-card"><p>No saved checks yet.</p>
+      <a class="btn btn-primary" href="#field">Check my field</a></div>`;
+    return;
+  }
+  $('saved-list').innerHTML = checks.map((c, i) => {
+    const now = c.options.find(o => o.isCurrent);
+    const best = c.options.filter(o => !o.isCurrent).sort((a, b) => b.total - a.total)[0];
+    // The older check for the same field, so the farmer can see what changed over time.
+    const prev = checks.slice(i + 1).find(p => p.fieldId === c.fieldId);
+    const change = prev
+      ? `<p class="change">Since ${dateText(prev.savedAt)}: heavy-rain cover ${prev.cover}% → ${c.cover}%, warning signs ${prev.warningsOn} → ${c.warningsOn}.</p>` : '';
+    return `<article class="saved panel-card">
+      <p class="small muted">Saved ${dateText(c.savedAt)}</p>
+      <h3>${esc(c.fieldName)} <span class="small muted">${esc(c.place)}</span></h3>
+      <dl class="saved-stats">
+        <div><dt>You grow</dt><dd>${esc(c.rotationName)} · ${now.total}/100</dd></div>
+        <div><dt>Heavy-rain cover</dt><dd>${c.cover}%</dd></div>
+        <div><dt>Warning signs on</dt><dd>${c.warningsOn} of 4</dd></div>
+        <div><dt>Best fit option</dt><dd>${best ? `${esc(best.name)} · ${best.total}/100` : 'none'}</dd></div>
+      </dl>
+      ${change}
+      <div class="saved-actions">
+        <button type="button" class="btn btn-primary" data-open="${c.id}">Open</button>
+        <button type="button" class="btn btn-ghost" data-delete="${c.id}">Remove</button>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+// Puts a saved check's answers back into the inputs and opens the comparison.
+async function openCheck(id) {
+  const c = listChecks().find(x => x.id === id);
+  if (!c || !state.field) return; // data still loading
+  $('field-select').value = c.fieldId;
+  await selectField(c.fieldId);
+  $('rotation-select').value = c.rotationId;
+  $('irrigated').checked = c.irrigated;
+  $('texture-select').value = c.texture;
+  $('no-hay').checked = c.noHay;
+  $('sells-forage').checked = c.sellsForage;
+  for (const [k, v] of Object.entries(c.weights)) {
+    if ($(`w-${k}`)) { $(`w-${k}`).value = v; $(`o-${k}`).textContent = v; }
+  }
+  render();
+  location.hash = 'compare';
+}
+
+$('nav-toggle').addEventListener('click', () => {
+  const open = $('nav-links').classList.toggle('open');
+  $('nav-toggle').setAttribute('aria-expanded', String(open));
+});
+$('save-check').addEventListener('click', saveCurrentCheck);
+$('saved-list').addEventListener('click', e => {
+  const open = e.target.dataset.open, del = e.target.dataset.delete;
+  if (open) openCheck(Number(open));
+  if (del) { deleteCheck(Number(del)); renderSaved(); }
+});
+window.addEventListener('hashchange', showPage);
+showPage();
 init();

@@ -18,6 +18,15 @@ This section is the current plan. Where it disagrees with older sections below, 
 
 **The hook:** the farmer doesn't have to type anything technical. We look up the field's real crop history (CropScape) and soil (SSURGO) ourselves.
 
+### Planned: sign-in with Firebase (teammate owns this)
+
+Goal: a farmer signs in once, and their saved soil checks follow them to any device.
+
+- **Now (done):** the "My farm" page saves checks in the browser only (localStorage). All saving goes through three functions in `js/storage.js`: `listChecks()`, `saveCheck(check)`, `deleteCheck(id)`. The check format is written at the top of `saveCurrentCheck()` in `js/app.js`.
+- **Next (teammate):** create a Firebase project, turn on Authentication (email link or Google sign-in) and Firestore. Store each check at `users/{uid}/checks/{id}`. Replace the three functions in `js/storage.js` (they will become `async`, so add `await` where `app.js` calls them). Add a "Sign in" button to the nav and the My farm page.
+- **Rules that still apply:** the app must still work with no login, because judges open it logged out. Keep the browser save as the fallback. Firestore security rules must only let a user read their own checks. Add Firebase (Apache-2.0) to SOURCES.md, and say in the README what is stored. The Firebase web config is not a secret, but never commit a service-account key. Ask the team before collecting any personal data beyond an email.
+- **Freeze check:** if this is not working end to end by the Sunday 10:00 a.m. feature freeze, ship the browser-only version.
+
 ### How the SI works
 
 The challenge says "SI" where you'd expect "AI". Ours is explainable: it finds patterns in 20+ years of data using clear rules, not a black box.
