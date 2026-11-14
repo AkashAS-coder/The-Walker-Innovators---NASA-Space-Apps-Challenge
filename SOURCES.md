@@ -48,4 +48,6 @@ The "Why cover matters" diagram on the How it works page is our own drawing (inl
 | Node.js built-in test runner | 18+ | MIT | Tests only |
 | Fraunces and Inter fonts (Google Fonts) | — | SIL Open Font License 1.1 | https://fonts.google.com/specimen/Fraunces · https://fonts.google.com/specimen/Inter |
 | Lucide icon shapes (map pin, layers, sliders, bookmark), redrawn inline | — | ISC | https://lucide.dev/ |
+| Firebase JS SDK (Authentication, Cloud Firestore, Firebase AI Logic) | 12.6.0 | Apache-2.0 | https://firebase.google.com/ (loaded from www.gstatic.com/firebasejs) |
+| Google Gemini (gemini-2.5-flash) via Firebase AI Logic, for the optional "Ask about these results" helper | — | Google API terms | https://firebase.google.com/docs/ai-logic |
 | Chama Verde (another NASA Space Apps team's site): layout idea only for the home page (sand and deep-green colors, big-number row, dark "How it works." band, closing button). No code, text or assets copied | — | — | https://chama-verde.netlify.app/ |

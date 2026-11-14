@@ -18,7 +18,7 @@ This section is the current plan. Where it disagrees with older sections below, 
 
 **The hook:** the farmer doesn't have to type anything technical. We look up the field's real crop history (CropScape) and soil (SSURGO) ourselves.
 
-### Planned: sign-in with Firebase (teammate owns this)
+### Sign-in with Firebase (code done Nov 14; needs the Firebase project set up, see README "Turning these on")
 
 Goal: a farmer signs in once, and their saved soil checks follow them to any device.
 

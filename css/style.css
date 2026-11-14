@@ -468,3 +468,34 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
   .step-nav .btn { flex: 1; }
   .saved-stats { grid-template-columns: 1fr; }
 }
+
+/* Sign-in button and the optional AI helper (js/cloud.js) */
+.nav-signin {
+  font: inherit; font-weight: 600; min-height: 44px; padding: 0 1rem; margin-left: .25rem; border-radius: 999px;
+  border: 2px solid var(--green); background: transparent; color: var(--green); cursor: pointer;
+}
+.nav-signin:hover { background: var(--green-soft); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tag-ai { background: #efe6f7; color: #5b3a7a; }
+.helper { margin-top: 1.6rem; }
+.helper h3 { margin-top: 0; }
+.helper-log { display: grid; gap: .6rem; margin: .8rem 0; }
+.helper-log:empty { display: none; }
+.msg { padding: .6rem .8rem; border-radius: var(--radius); max-width: 90%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.you { justify-self: end; background: var(--green-soft); }
+.msg.bot { justify-self: start; background: #f5f0f9; border-left: 4px solid #5b3a7a; }
+.msg.bot::before { content: "AI answer"; display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; color: #5b3a7a; }
+.msg.err { background: var(--warn-soft); color: var(--warn); }
+.helper-form { display: flex; gap: .5rem; }
+.helper-form input { flex: 1; min-width: 0; font: inherit; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 999px; background: #fff; }
+.helper-note { margin: .8rem 0 0; color: var(--muted); }
+@media (max-width: 560px) { .helper-form { flex-direction: column; } .msg { max-width: 100%; } }
+.account { max-width: 460px; }
+.account-status { font-weight: 600; margin-top: 0; }
+.account-error { color: var(--warn); margin-bottom: 0; }
+.account-error:empty { display: none; }
+.email-form { display: grid; gap: .3rem; }
+.email-form input { font: inherit; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 8px; margin-bottom: .5rem; background: #fff; }
+.email-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .4rem; }
+.or { display: flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .9rem; margin: 1.2rem 0; }
+.or::before, .or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }

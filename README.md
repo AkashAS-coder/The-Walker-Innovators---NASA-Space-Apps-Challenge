@@ -55,6 +55,21 @@ Full details: [docs/API.md](docs/API.md).
 node --test tests/run.test.js
 ```
 
+## Sign-in and the AI helper (optional)
+
+- **Sign in** (the "Sign in" link in the menu) uses Firebase Authentication, with Google or an email and password. When you're signed in, the checks you save on "My farm" are also stored in Cloud Firestore at `users/{your id}/checks/`, so they follow you to any device. We store only your email (inside Firebase Authentication) and the checks you choose to save. You never need an account: without one, checks save in your browser as before.
+- **"Ask about these results"** (bottom of step 4) is a chatbot that uses Google Gemini through Firebase AI Logic. It gets a text copy of what the page shows, including the scores, the five boxes and the weather and soil cards. It is told to explain only those numbers, to say when it doesn't know, and never to say what to plant. It does not change any score: scores come from the fixed rules in `js/scoring.js`. Its answers are labeled "AI answer" and can be wrong.
+
+**Turning these on (one-time, about 10 minutes, done by the repo owner):**
+
+1. At https://console.firebase.google.com create a project, then add a **Web app**. Copy its config into `js/firebase-config.js`. The web config is not a secret; never add a service-account key.
+2. **Authentication → Sign-in method:** turn on **Google** and **Email/Password**. Under **Settings → Authorized domains**, add your GitHub Pages domain (`<user>.github.io`). `localhost` is already allowed.
+3. **Firestore Database → Create database** (production mode). Paste [firestore.rules](firestore.rules) into the **Rules** tab and publish it. The rules let each user read and write only their own checks.
+4. **AI Logic → Get started → Gemini Developer API** (it has a no-cost tier).
+5. Reload the site. If Google later retires the model name, change `AI_MODEL` in `js/cloud.js`.
+
+Until step 1 is done, the site works as before, and the sign-in page and the helper say they are not set up.
+
 ## Limits (what we know we don't know)
 
 - Crop trait ratings in `data/crops.csv` are our reading of the linked extension sources. Rows marked `verified=no` still need a team member to check them.
@@ -65,10 +80,11 @@ node --test tests/run.test.js
 - Water-need and heat ratings for most crops are our judgment; see [docs/CROP_CHECK.md](docs/CROP_CHECK.md) for which traits each source supports.
 - The demo fields are real crop pixels chosen from CropScape. We don't know who farms them, and no personal information is used.
 - Yields are not modeled.
+- The AI helper can make mistakes even with its rules. It sees only the page's numbers, and the free Gemini tier has rate limits, so it may say it is busy during a demo.
 
 ## Libraries
 
-Leaflet 1.9.4 (BSD-2-Clause), Chart.js 4.4.1 (MIT) and OpenStreetMap tiles (© OpenStreetMap contributors, ODbL), loaded from public CDNs.
+Leaflet 1.9.4 (BSD-2-Clause), Chart.js 4.4.1 (MIT), Firebase JS SDK 12.6.0 (Apache-2.0, optional sign-in and AI helper) and OpenStreetMap tiles (© OpenStreetMap contributors, ODbL), loaded from public CDNs.
 
 ## AI use
 

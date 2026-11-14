@@ -24,6 +24,7 @@
         <a href="#field" data-nav="field soil year compare">Check my field</a>
         <a href="#myfarm" data-nav="myfarm">My farm</a>
         <a href="#science" data-nav="science">The science</a>
+        <a href="#account" data-nav="account" class="nav-signin" id="nav-account">Sign in</a>
       </div>
     </div>
   </nav>
@@ -325,6 +326,56 @@
         <button type="button" class="btn btn-primary" id="save-check">Save to My farm</button>
       </div>
       <p id="save-msg" class="small save-msg" aria-live="polite"></p>
+
+      <!-- Optional AI helper. It explains the results above; it never scores or picks a rotation. -->
+      <section class="helper panel-card" aria-labelledby="helper-title">
+        <h3 id="helper-title">Ask about these results <span class="tag tag-ai">AI helper</span></h3>
+        <p class="small muted">Ask in your own words, for example "Why does the first option score higher?" or "What does NDVI mean?" The helper only sees the numbers on this page.</p>
+        <div id="helper-log" class="helper-log" aria-live="polite"></div>
+        <form id="helper-form" class="helper-form">
+          <label for="helper-input" class="sr-only">Your question</label>
+          <input id="helper-input" type="text" maxlength="300" placeholder="Type a question" autocomplete="off">
+          <button type="submit" class="btn btn-primary" id="helper-send">Ask</button>
+        </form>
+        <p class="small helper-note"><strong>AI-generated answers can be wrong.</strong> The scores above come from fixed, published rules, not from this helper. Answers by Google Gemini through Firebase. Check anything important with your extension agent.</p>
+      </section>
+    </section>
+
+    <!-- ========== ACCOUNT (optional sign-in, js/cloud.js) ========== -->
+    <section class="page wrap" data-page="account" hidden>
+      <header class="page-head">
+        <p class="eyebrow">Account</p>
+        <h2>Sign in to keep your farm on any device</h2>
+        <p class="muted">You don't need an account. Every part of the tool works without one. Signing in only lets your saved soil checks follow you to your phone or another computer.</p>
+      </header>
+      <div class="account panel-card">
+        <p id="account-status" class="account-status" aria-live="polite">Checking sign-in…</p>
+
+        <div id="signed-out" hidden>
+          <button type="button" class="btn btn-primary" id="google-signin">Continue with Google</button>
+          <p class="or"><span>or use an email and password</span></p>
+          <form id="email-form" class="email-form">
+            <label for="email">Email</label>
+            <input id="email" type="email" autocomplete="email" required>
+            <label for="password">Password (at least 6 characters)</label>
+            <input id="password" type="password" autocomplete="current-password" minlength="6" required>
+            <div class="email-actions">
+              <button type="submit" class="btn btn-primary" data-mode="in">Sign in</button>
+              <button type="submit" class="btn btn-ghost" data-mode="up">Create account</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="signed-in" hidden>
+          <div class="email-actions">
+            <a class="btn btn-primary" href="#myfarm">Go to My farm</a>
+            <button type="button" class="btn btn-ghost" id="sign-out">Sign out</button>
+          </div>
+        </div>
+
+        <p id="account-error" class="small account-error" aria-live="polite"></p>
+      </div>
+      <p class="small muted">What we store: your email (kept by Firebase Authentication) and the soil checks you choose to save. Nothing else. Only you can read your checks.</p>
     </section>
 
     <!-- ========== MY FARM ========== -->
@@ -335,7 +386,7 @@
         <p class="muted">Save a check on step 4, then come back any time to reopen it or see how it changed.</p>
       </header>
       <div id="saved-list" class="saved-list"></div>
-      <p class="small muted">Saved on this device only. Nothing is sent anywhere. Account sign-in, so you can see your farm on any device, is planned.</p>
+      <p class="small muted" id="account-note">Saved on this device only. Nothing is sent anywhere.</p>
     </section>
 
     <!-- ========== THE SCIENCE ========== -->
@@ -455,6 +506,8 @@
   <script src="js/indicators.js"></script>
   <script src="js/scoring.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script type="module" src="js/cloud.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

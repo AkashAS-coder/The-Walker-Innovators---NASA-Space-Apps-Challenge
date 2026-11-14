@@ -316,6 +316,7 @@ function renderOptions() {
   const results = compareRotations(state.rotations, $('rotation-select').value, field, weights(),
                                    { noHay: $('no-hay').checked });
   state.results = results; // kept so "Save to My farm" saves exactly what is on screen
+  state.ask = null;         // results changed, so the AI helper starts a fresh chat next time
   const best = Math.max(...results.slice(1).map(r => r.total));
 
   $('risk-strip').innerHTML = monthStrip(results[0], true);
@@ -429,7 +430,7 @@ function findingSentence(results) {
 // ---------- pages ----------
 // The site is one HTML file with several <section class="page">. The #hash in the address
 // (#home, #field, #compare...) picks which one shows, so Back buttons and bookmarks work.
-const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'science'];
+const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'science', 'account'];
 const STEPS = ['field', 'soil', 'year', 'compare'];
 
 function showPage() {
@@ -449,6 +450,7 @@ function showPage() {
   if (state.map && id === 'field') { state.map.invalidateSize(); state.map.fitBounds(state.mapBounds); }
   Object.values(state.charts).forEach(c => c && c.resize());
   if (id === 'myfarm') renderSaved();
+  if (id === 'account') renderAccount();
 }
 
 // ---------- My farm: saved checks ----------
@@ -524,6 +526,112 @@ async function openCheck(id) {
   render();
   location.hash = 'compare';
 }
+
+// ---------- Account: optional sign-in (the Firebase code is in cloud.js) ----------
+
+const SIGN_IN_ERRORS = {
+  'auth/invalid-credential': 'That email and password do not match an account.',
+  'auth/email-already-in-use': 'There is already an account with that email. Try Sign in.',
+  'auth/weak-password': 'Please use at least 6 characters.',
+  'auth/invalid-email': 'That email address does not look right.',
+  'auth/popup-closed-by-user': 'The Google window was closed before signing in.',
+  'auth/operation-not-allowed': 'This sign-in method is not turned on in our Firebase project yet.',
+};
+const signInError = err => SIGN_IN_ERRORS[err.code] || `Sign-in did not work (${err.code || err.message}).`;
+
+function renderAccount() {
+  const c = window.cloud || {};
+  const user = c.user;
+  $('nav-account').textContent = user ? 'Account' : 'Sign in';
+  $('signed-out').hidden = !c.ready || !!user;
+  $('signed-in').hidden = !user;
+  $('account-status').textContent =
+    user ? `Signed in as ${user.email || 'a Google account'}. Your saved checks follow you to any device.`
+    : c.ready ? 'You are not signed in.'
+    : c.reason === 'loading' ? 'Checking sign-in…'
+    : 'Sign-in is not set up on this copy of the site yet. Everything else works, and checks save in this browser.';
+  $('account-note').textContent = user
+    ? 'Saved to your account and this browser. Only you can see them.'
+    : 'Saved on this device only. Sign in to keep them on any device.';
+  if (location.hash === '#myfarm') renderSaved();
+}
+
+async function runSignIn(action) {
+  $('account-error').textContent = '';
+  try { await action(); } catch (err) { $('account-error').textContent = signInError(err); }
+}
+
+$('google-signin').addEventListener('click', () => runSignIn(() => window.cloud.signIn()));
+$('email-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const email = $('email').value.trim(), pw = $('password').value;
+  const up = e.submitter && e.submitter.dataset.mode === 'up';
+  runSignIn(() => (up ? window.cloud.signUpEmail(email, pw) : window.cloud.signInEmail(email, pw)));
+});
+$('sign-out').addEventListener('click', () => runSignIn(() => window.cloud.signOut()));
+window.addEventListener('cloud-change', renderAccount);
+
+// ---------- AI helper: answers questions about the results on screen ----------
+// The scores come from scoring.js. The helper only gets a text copy of what the page
+// already shows and is told to explain it, not to decide. See HELPER_RULES in cloud.js.
+
+function resultsForHelper() {
+  const f = state.field;
+  const text = id => ($(id) ? $(id).innerText.replace(/\n{2,}/g, '\n').trim() : '');
+  const options = state.results.map(r => [
+    `OPTION: ${r.rotation.name}${r.isCurrent ? ' (what the farmer grows now)' : ''}`,
+    `Fit score: ${r.total}/100. Sub-scores: ${Object.entries(r.sub).map(([k, v]) => `${k} ${Math.round(v.score)}`).join(', ')}`,
+    `Soil warning signs on: ${r.warnings.filter(w => w.lit).map(w => w.label).join('; ') || 'none'}`,
+    `Why suggested: ${r.explain.why.join(' ')}`,
+    `Evidence: ${r.explain.evidence.join(' ')}`,
+    `Benefits: ${r.explain.benefits.join(' ')}`,
+    `What we don't know: ${r.explain.unknowns.join(' ')}`,
+    `Check locally: ${r.explain.checkLocally.join(' ')}`,
+  ].join('\n'));
+  return [
+    `FIELD: ${f.name}, ${f.place}. Irrigated: ${$('irrigated').checked ? 'yes' : 'no'}. Soil texture: ${$('texture-select').value}.`,
+    `FARMER PRIORITIES (0-5): ${Object.entries(weights()).map(([k, v]) => `${k} ${v}`).join(', ')}`,
+    `HEADLINE: ${text('finding')}`,
+    `WEATHER CARDS:\n${text('weather-cards')}`,
+    `SOIL CARD:\n${text('soil-card')}`,
+    `SOIL CHECK:\n${text('soil-check')}`,
+    ...options,
+  ].join('\n\n');
+}
+
+function addMessage(who, words) {
+  const p = document.createElement('p');
+  p.className = `msg ${who}`;
+  p.textContent = words; // textContent, never innerHTML, so an answer can't inject code
+  $('helper-log').appendChild(p);
+  return p;
+}
+
+$('helper-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const question = $('helper-input').value.trim();
+  if (!question) return;
+  const c = window.cloud || {};
+  addMessage('you', question);
+  $('helper-input').value = '';
+  if (!c.ready) {
+    addMessage('err', 'The AI helper is not set up on this copy of the site yet. Every score and explanation above still works without it.');
+    return;
+  }
+  if (!state.results) { addMessage('err', 'The results are still loading. Try again in a moment.'); return; }
+  const waiting = addMessage('bot', 'Thinking…');
+  $('helper-send').disabled = true;
+  try {
+    if (!state.ask) state.ask = c.newChat(resultsForHelper());
+    waiting.textContent = await state.ask(question);
+  } catch (err) {
+    console.error(err);
+    waiting.className = 'msg err';
+    waiting.textContent = 'The helper could not answer right now (the AI service may be busy). The results above are unchanged.';
+  } finally {
+    $('helper-send').disabled = false;
+  }
+});
 
 $('nav-toggle').addEventListener('click', () => {
   const open = $('nav-links').classList.toggle('open');
