@@ -1,9 +1,13 @@
-id,name,sequence,description
-corn_soy,Corn then soybean,corn>bare;soybean>bare,Two-year corn and soybean with the field left bare over winter.
-corn_soy_cover,Corn and soybean with winter cover crops,corn>cereal_rye;soybean>crimson_clover,Same cash crops as corn-soybean but the field stays covered in winter.
-corn_wheat_soy,Corn then wheat and double-crop soybean,corn>winter_wheat;soybean_double>bare,Three harvests in two years. Wheat covers the first winter.
-sorghum_wheat_soy,Sorghum then wheat and double-crop soybean,grain_sorghum>winter_wheat;soybean_double>cereal_rye,Swaps corn for drought-tolerant sorghum and keeps a winter crop every year.
-alfalfa_corn,Alfalfa hay then corn and soybean,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;corn>cereal_rye;soybean>bare,Three years of alfalfa hay then two years of grain.
-forage_mix,Summer forage with clover and corn,sorghum_sudangrass>crimson_clover;corn>cereal_rye,Summer forage grass for grazing or hay then corn with a rye cover.
-soy_radish_corn,Soybean and radish then corn and rye,soybean>forage_radish;corn>cereal_rye,Adds a deep-rooted radish cover after soybean and rye after corn.
-alfalfa_grain,Alfalfa hay then corn and wheat,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;corn>winter_wheat;soybean_double>bare,Long alfalfa stand followed by corn then wheat and soybean. Common in irrigated western valleys.
+id,name,region,sequence,description
+corn_soy,Corn then soybean,east,corn>bare;soybean>bare,Two-year corn and soybean with the field left bare over winter.
+corn_soy_cover,Corn and soybean with winter cover crops,east,corn>cereal_rye;soybean>crimson_clover,Same cash crops as corn-soybean but the field stays covered in winter.
+corn_wheat_soy,Corn then wheat and double-crop soybean,east,corn>winter_wheat;soybean_double>bare,Three harvests in two years. Wheat covers the first winter.
+sorghum_wheat_soy,Sorghum then wheat and double-crop soybean,east,grain_sorghum>winter_wheat;soybean_double>cereal_rye,Swaps corn for drought-tolerant sorghum and keeps a winter crop every year.
+alfalfa_corn,Alfalfa hay then corn and soybean,east,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;corn>cereal_rye;soybean>bare,Three years of alfalfa hay then two years of grain.
+forage_mix,Summer forage with clover and corn,east,sorghum_sudangrass>crimson_clover;corn>cereal_rye,Summer forage grass for grazing or hay then corn with a rye cover.
+soy_radish_corn,Soybean and radish then corn and rye,east,soybean>forage_radish;corn>cereal_rye,Adds a deep-rooted radish cover after soybean and rye after corn.
+alfalfa_then_corn,Alfalfa hay then three years of corn,west,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;corn>bare;corn>bare;corn>bare,Matches the CropScape record for the Fallon field: four years of alfalfa then three of corn with bare winters.
+alfalfa_grain,Alfalfa hay then corn and wheat,west,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;corn>winter_wheat;sorghum_sudangrass>bare,Long alfalfa stand then corn and winter wheat with summer forage after the wheat.
+alfalfa_sorghum,Alfalfa hay then sorghum and corn,west,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;grain_sorghum>cereal_rye;corn>bare,Swaps one corn year for sorghum which needs less water and adds a rye cover.
+alfalfa_forage,Shorter alfalfa stand with summer forage,west,alfalfa>alfalfa;alfalfa>alfalfa;sorghum_sudangrass>cereal_rye;corn>cereal_rye,Two years of alfalfa then summer forage and corn with rye over both winters.
+grain_no_hay,Corn and sorghum with winter wheat,west,corn>winter_wheat;grain_sorghum>cereal_rye,Grain only with no hay equipment needed. Wheat and rye cover the winters.

@@ -14,6 +14,7 @@
       <h1>Field Shift Rotation Explorer</h1>
       <p class="lead">See how your field's weather and soil are changing, then compare three crop rotations side by side, including the one you grow now. Every option shows its evidence and what we still don't know.</p>
       <p class="mission">Compare rotations · reveal trade-offs · understand risk · make uncertainty visible</p>
+      <p class="honest-header">Rule-based, no black box · every number names its data source · every option lists what we don't know</p>
     </div>
   </header>
 
@@ -22,6 +23,7 @@
   </div>
 
   <main class="wrap">
+    <p id="finding" class="finding" aria-live="polite"></p>
     <p id="loading" class="loading">Loading saved NASA data…</p>
     <p id="load-error" class="error" hidden></p>
 
@@ -57,6 +59,7 @@
         <div class="checks">
           <label><input type="checkbox" id="irrigated"> My field is irrigated</label>
           <label><input type="checkbox" id="no-hay"> I don't have hay or forage equipment</label>
+          <label><input type="checkbox" id="sells-forage"> I can sell hay or feed it to my own livestock</label>
         </div>
       </div>
       <h3>What you've grown <span class="tag tag-usda">USDA CropScape</span></h3>
@@ -133,9 +136,9 @@
       <ul class="rules">
         <li><strong>Save water:</strong> starts from the main crops' water need in our crop table. On a rain-fed field, thirsty crops lose points for every summer month where NASA POWER shows root-zone soil drier than normal in 2021–2025, and on sandy soil.</li>
         <li><strong>Build soil health:</strong> points for living roots every winter, a nitrogen-fixing crop, a deep-rooted crop, and more plant families.</li>
-        <li><strong>Extra income:</strong> harvests per year (not dollars, since we have no local prices), minus points for heat-sensitive crops when recent summers are hot and for crops whose window crosses your usual frost dates.</li>
+        <li><strong>Extra income:</strong> harvests per year (not dollars, since we have no local prices; hay counts as half a harvest unless you say you can sell or feed it), minus points for heat-sensitive crops when recent summers are hot and for crops whose window crosses your usual frost dates.</li>
         <li><strong>Forage:</strong> the forage value of the crops in our table.</li>
-        <li><strong>Reduce erosion:</strong> how much of the year the ground is covered, with extra weight on the months when NASA POWER shows heavy rain (over 50 mm in a day) has fallen.</li>
+        <li><strong>Reduce erosion:</strong> how much of the year the ground is covered, with extra weight on the months when NASA POWER shows heavy rain (over 2 in / 50 mm in a day) has fallen.</li>
       </ul>
       <p class="small">The scoring code is in <code>js/scoring.js</code> and the thresholds are in <code>js/indicators.js</code>. The API docs are in <a href="docs/API.md">docs/API.md</a>.</p>
     </section>

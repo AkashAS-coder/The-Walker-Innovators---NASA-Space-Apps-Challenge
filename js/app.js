@@ -17,6 +17,19 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const fmt = (x, digits = 0) => (x === null || x === undefined ? 'n/a' : Number(x).toFixed(digits));
 const signed = (x, digits = 0) => (x === null ? 'n/a' : (x > 0 ? '+' : '') + Number(x).toFixed(digits));
+// US units first, metric in brackets. 1 inch = 25.4 mm.
+const inches = mm => (mm === null ? 'n/a' : (mm / 25.4).toFixed(1));
+const rainText = mm => `${inches(mm)} in (${fmt(mm)} mm)`;
+
+// Says whether an early-vs-recent change is bigger than the usual year-to-year swing
+// (one standard deviation of the yearly values). Small changes may just be weather noise.
+function swing(ind, key, diff, unit, toUnit = x => fmt(x, 1)) {
+  const sd = stdev(ind.yearly.map(y => y[key]));
+  if (diff === null || sd === null) return '';
+  return Math.abs(diff) < sd
+    ? ` That is within the normal year-to-year swing (±${toUnit(sd)} ${unit}), so it may not be a real trend.`
+    : ` That is bigger than the normal year-to-year swing (±${toUnit(sd)} ${unit}).`;
+}
 
 async function getJson(path, optional = false) {
   const res = await fetch(path);
@@ -70,7 +83,7 @@ function buildInputs() {
 
   $('texture-select').innerHTML = SOIL_TEXTURES.map(t => `<option>${t}</option>`).join('');
 
-  for (const id of ['rotation-select', 'texture-select', 'irrigated', 'no-hay']) {
+  for (const id of ['rotation-select', 'texture-select', 'irrigated', 'no-hay', 'sells-forage']) {
     $(id).addEventListener('change', render);
   }
 
@@ -88,8 +101,8 @@ function buildInputs() {
   }
 
   $('trend-toggle').innerHTML = [
-    ['heatDays', 'Hot days (>32 °C)'], ['frostFreeDays', 'Frost-free days'],
-    ['seasonRainMm', 'Apr–Sep rain (mm)'], ['longestDrySpell', 'Longest dry spell'],
+    ['heatDays', 'Hot days (>90 °F)'], ['frostFreeDays', 'Frost-free days'],
+    ['seasonRainMm', 'Apr–Sep rain (in)'], ['longestDrySpell', 'Longest dry spell'],
   ].map(([k, label]) => `<button type="button" data-key="${k}">${label}</button>`).join('');
   $('trend-toggle').addEventListener('click', e => {
     if (!e.target.dataset.key) return;
@@ -130,8 +143,13 @@ async function selectField(id) {
   state.field = field;
   $('field-place').textContent = `${field.place} · latitude ${field.lat}, longitude ${field.lon}`;
   $('field-note').textContent = field.note;
+  // Only offer rotations meant for this field's region (no soybean in the Nevada desert).
+  $('rotation-select').innerHTML = state.rotations
+    .filter(r => r.region === 'any' || r.region === field.region)
+    .map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
   $('rotation-select').value = field.default_rotation;
   $('irrigated').checked = field.irrigated;
+  $('sells-forage').checked = !!field.sells_forage;
   const soil = state.cache[id].soil;
   // Match the survey texture to our list, longest name first ("Fine sandy loam" -> "Sandy loam").
   const surveyed = soil && soil.texdesc ? soil.texdesc.toLowerCase() : '';
@@ -151,8 +169,9 @@ async function selectField(id) {
 // The field object the scoring code needs, built from the current inputs.
 function currentField() {
   const c = state.cache[state.field.id];
-  return { id: state.field.id, ind: c.ind, soil: c.soil,
-           irrigated: $('irrigated').checked, texture: $('texture-select').value };
+  return { id: state.field.id, region: state.field.region, ind: c.ind, soil: c.soil,
+           irrigated: $('irrigated').checked, texture: $('texture-select').value,
+           sellsForage: $('sells-forage').checked };
 }
 
 function weights() {
@@ -187,17 +206,22 @@ function renderReport() {
 
   $('weather-cards').innerHTML = [
     card('Frost-free season', `${fmt(ind.frostFree.recent)} days`,
-      `${signed(ind.frostFree.diff)} day(s) compared with ${early}. More days can leave room for a cover crop or a second crop.`),
+      `${signed(ind.frostFree.diff)} day(s) compared with ${early}.` + swing(ind, 'frostFreeDays', ind.frostFree.diff, 'days', x => fmt(x)) +
+      ' More days can leave room for a cover crop or a second crop.'),
     card('Frost risk dates', `${dayToDateLabel(ind.medianLastSpringFrost)} → ${dayToDateLabel(ind.medianFirstFallFrost)}`,
-      'Usual last spring frost and first fall frost (middle year of 21). Frost-sensitive crops should sit between them.', true),
+      'Usual last spring frost and first fall frost, at or below 32 °F (0 °C) (middle year of 21). Frost-sensitive crops should sit between them.', true),
     card('Hot summer days', `${fmt(ind.heat.recent)} / year`,
-      `Days above 32 °C (90 °F) in June–August. ${signed(ind.heat.diff)} compared with ${early}.`, ind.heat.recent >= 20),
-    card('Growing-season rain', `${fmt(ind.rain.recent)} mm`,
-      `April–September total. It swings by about ±${fmt(ind.rain.spread)} mm from year to year. ${signed(ind.rain.diff)} mm compared with ${early}.`),
+      `Days above 90 °F (32 °C) in June–August. ${signed(ind.heat.diff)} compared with ${early}.` +
+      swing(ind, 'heatDays', ind.heat.diff, 'days', x => fmt(x)), ind.heat.recent >= 20),
+    card('Growing-season rain', rainText(ind.rain.recent),
+      `April–September total. ${signed(ind.rain.diff / 25.4, 1)} in compared with ${early}.` +
+      swing(ind, 'seasonRainMm', ind.rain.diff, 'in', inches)),
     card('Longest dry spell', `${fmt(ind.drySpell.recent)} days`,
-      `Longest run of days with under 1 mm of rain in April–September. ${signed(ind.drySpell.diff, 1)} days compared with ${early}.`),
+      `Longest run of days with under 0.04 in (1 mm) of rain in April–September. ${signed(ind.drySpell.diff, 1)} days compared with ${early}.` +
+      swing(ind, 'longestDrySpell', ind.drySpell.diff, 'days')),
     card('Extreme-rain days', `${fmt(ind.extremeRain.recent, 1)} / year`,
-      `Days with over 50 mm (2 in) of rain, which can wash bare soil away. ${signed(ind.extremeRain.diff, 1)} compared with ${early}.`),
+      `Days with over 2 in (50 mm) of rain, which can wash bare soil away. ${signed(ind.extremeRain.diff, 1)} compared with ${early}.` +
+      swing(ind, 'extremeRainDays', ind.extremeRain.diff, 'days')),
     card('Summer soil-moisture anomaly', `${signed(summerAnom, 1)} points`,
       (drySummer.length ? `Root-zone soil was drier than usual in ${drySummer.map(m => m.name).join(', ')} in ${recent}.`
                         : `Root-zone soil was as wet as or wetter than usual in summer in ${recent}.`) +
@@ -208,7 +232,7 @@ function renderReport() {
     card('Soil type', esc(soil.compname), esc(soil.muname)),
     card('Slope', `${fmt(soil.slope_r)}%`, Number(soil.slope_r) >= 7 ? 'Sloped ground: bare soil here washes away more easily.' : 'Fairly flat ground.', Number(soil.slope_r) >= 7),
     card('Drainage', esc(soil.drainagecl || 'n/a'), `Hydrologic group ${esc(soil.hydgrp || 'n/a')} (A soaks in fast, D runs off).`),
-    card('Topsoil', `${fmt(soil.om_r, 1)}% organic matter`, `Holds about ${fmt(soil.awc_r * 100, 0)} cm of water per meter of soil. ${esc(soil.texdesc)}.`),
+    card('Topsoil', `${fmt(soil.om_r, 1)}% organic matter`, `Holds about ${fmt(soil.awc_r * 12, 1)} in of water per foot of soil. ${esc(soil.texdesc)}.`),
   ].join('') : '<p class="muted">No soil survey data saved for this field.</p>';
 
   drawTrendChart();
@@ -217,8 +241,9 @@ function renderReport() {
 
 function drawTrendChart() {
   const ind = state.cache[state.field.id].ind;
-  const labels = { heatDays: 'Hot days (>32 °C)', frostFreeDays: 'Frost-free days',
-                   seasonRainMm: 'Apr–Sep rain (mm)', longestDrySpell: 'Longest dry spell (days)' };
+  const labels = { heatDays: 'Hot days (>90 °F)', frostFreeDays: 'Frost-free days',
+                   seasonRainMm: 'Apr–Sep rain (in)', longestDrySpell: 'Longest dry spell (days)' };
+  const value = y => (state.trendKey === 'seasonRainMm' ? Number(inches(y.seasonRainMm)) : y[state.trendKey]);
   document.querySelectorAll('#trend-toggle button')
     .forEach(b => b.classList.toggle('on', b.dataset.key === state.trendKey));
   if (typeof Chart === 'undefined') return;
@@ -227,7 +252,7 @@ function drawTrendChart() {
     type: 'line',
     data: {
       labels: ind.yearly.map(y => y.year),
-      datasets: [{ label: labels[state.trendKey], data: ind.yearly.map(y => y[state.trendKey]),
+      datasets: [{ label: labels[state.trendKey], data: ind.yearly.map(value),
                    borderColor: '#2c5d8a', backgroundColor: '#2c5d8a', tension: 0.25 }],
     },
     options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } },
@@ -291,10 +316,14 @@ function renderOptions() {
   const best = Math.max(...results.slice(1).map(r => r.total));
 
   $('risk-strip').innerHTML = monthStrip(results[0], true);
+  $('finding').innerHTML = findingSentence(results);
 
-  $('options').innerHTML = results.map(r => `
+  const fewNote = results.length < 3
+    ? `<p class="muted">Only ${results.length - 1} alternative fits your region and limits. Untick "no hay equipment" to see more.</p>` : '';
+  $('options').innerHTML = fewNote + results.map(r => `
     <article class="option ${r.isCurrent ? 'current' : ''} ${!r.isCurrent && r.total === best ? 'best' : ''}">
       <span class="badge">${r.isCurrent ? 'What you grow now' : r.total === best ? 'Best fit for your priorities' : 'Alternative'}</span>
+      <a class="honest" href="#unk-${r.rotation.id}">Shows its limits: ${r.explain.unknowns.length} things we don't know ↓</a>
       <h3>${esc(r.rotation.name)}</h3>
       <p class="seq">${esc(sequenceText(r.rotation))}</p>
       <div class="fit"><span class="big">${r.total}</span><span class="muted">/ 100 fit score</span></div>
@@ -308,9 +337,28 @@ function renderOptions() {
       <div class="box why"><h4>Why suggested</h4>${list(r.explain.why)}</div>
       <div class="box evidence"><h4>Evidence</h4>${list(r.explain.evidence)}</div>
       <div class="box benefits"><h4>Benefits</h4>${list(r.explain.benefits)}</div>
-      <div class="box unknowns"><h4>What we don't know</h4>${list(r.explain.unknowns)}</div>
+      <div class="box unknowns" id="unk-${r.rotation.id}"><h4>What we don't know</h4>${list(r.explain.unknowns)}</div>
       <div class="box check"><h4>Check locally</h4>${list(r.explain.checkLocally)}</div>
     </article>`).join('');
+}
+
+// One plain sentence at the top: which option fits best and the biggest reasons why.
+function findingSentence(results) {
+  const [current, ...alts] = results;
+  if (!alts.length) return '';
+  const top = alts.reduce((a, b) => (b.total > a.total ? b : a));
+  const field = state.field;
+  if (top.total <= current.total) {
+    return `<strong>For ${esc(field.place)}:</strong> what you grow now (${current.total}/100) already fits your priorities ` +
+           `as well as any option we checked. Moving the sliders may change that.`;
+  }
+  const w = weights();
+  const gains = Object.keys(PRIORITIES)
+    .map(k => ({ k, d: top.sub[k].score - current.sub[k].score, wd: w[k] * (top.sub[k].score - current.sub[k].score) }))
+    .filter(g => g.d > 0 && w[g.k] > 0).sort((a, b) => b.wd - a.wd).slice(0, 2);
+  const why = gains.length ? `, mostly from ${gains.map(g => `${PRIORITIES[g.k].toLowerCase()} (+${Math.round(g.d)})`).join(' and ')}` : '';
+  return `<strong>For ${esc(field.place)}:</strong> “${esc(top.rotation.name)}” scores ${top.total}/100 against ` +
+         `${current.total} for what you grow now${why}. Take it to your extension agent before changing anything.`;
 }
 
 init();

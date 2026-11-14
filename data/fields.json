@@ -5,7 +5,9 @@
     "place": "Henry County, Virginia",
     "lat": 36.83,
     "lon": -79.81,
+    "region": "east",
     "irrigated": false,
+    "sells_forage": false,
     "default_rotation": "corn_wheat_soy",
     "note": "A real crop field picked from the USDA Cropland Data Layer (CropScape). Its recorded history is corn, wheat with double-crop soybean, and soybean. We do not know who farms it, and no farmer's details are used."
   },
@@ -15,8 +17,10 @@
     "place": "Churchill County, Nevada",
     "lat": 39.41,
     "lon": -118.78,
+    "region": "west",
     "irrigated": true,
-    "default_rotation": "alfalfa_grain",
+    "sells_forage": true,
+    "default_rotation": "alfalfa_then_corn",
     "note": "A real irrigated field picked from the USDA Cropland Data Layer (CropScape). Its recorded history is alfalfa with some years of corn. Shows the tool works outside Virginia."
   }
 ]

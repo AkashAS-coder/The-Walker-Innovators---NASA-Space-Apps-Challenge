@@ -64,7 +64,8 @@ node --test tests/run.test.js
 - No prices or market data yet, so income is counted in harvests, not dollars.
 - NASA POWER is a grid about 50 km wide, not the exact field. A MODIS pixel is 250 m wide and can include land next to the field.
 - NDVI covers only 2021–2025 because the subset service is slow. For Henry County, the 15 images after April 23, 2025 are missing because the server kept failing; run `python3 src/fetch_ndvi.py henry_va` to fill them in (it resumes). Widen `FIRST_YEAR` in `src/fetch_ndvi.py` when there is time.
-- Planting months follow a Virginia calendar, so they may not fit Nevada.
+- Planting months follow a Virginia calendar, so they may not fit Nevada. The Nevada rotations are built from crops CropScape records near the field, not from a Nevada extension guide.
+- Water-need and heat ratings for most crops are our judgment; see [docs/CROP_CHECK.md](docs/CROP_CHECK.md) for which traits each source supports.
 - The demo fields are real crop pixels chosen from CropScape. We don't know who farms them, and no personal information is used.
 - Yields are not modeled.
 

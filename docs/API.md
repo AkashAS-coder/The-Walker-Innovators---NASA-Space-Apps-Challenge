@@ -145,7 +145,7 @@ GET https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLValue?year=2023&
 
 | File | Written by | Contents |
 | --- | --- | --- |
-| `data/fields.json` | Hand-edited | List of fields: `id`, `name`, `place`, `lat`, `lon`, `irrigated`, `default_rotation`, `note` |
+| `data/fields.json` | Hand-edited | List of fields: `id`, `name`, `place`, `lat`, `lon`, `region` (`east` or `west`), `irrigated`, `sells_forage`, `default_rotation`, `note` |
 | `data/crops.csv` | Hand-edited | One crop per row: traits plus a `source` URL and `verified` (yes/no) |
 | `data/rotations.csv` | Hand-edited | Candidate rotations |
 | `data/raw/*.json` | Fetch scripts only | Saved API responses. Never edit by hand. |
@@ -168,7 +168,7 @@ GET https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLValue?year=2023&
 | `source` | URL | Where the traits come from |
 | `verified` | yes / no | Has a team member checked this row against the source? |
 
-**`rotations.csv` format**: the `sequence` column lists years separated by `;`. Each year is `main crop>winter crop`. Use `bare` for nothing. Example: `corn>cereal_rye;soybean>bare` means year 1 is corn and then rye over winter, and year 2 is soybean and then a bare winter.
+**`rotations.csv` format**: `region` is `east` (humid, rain-fed, built for Virginia), `west` (dry, irrigated, built from crops CropScape records near Fallon, NV) or `any`. A field is only offered rotations for its region. The `sequence` column lists years separated by `;`. Each year is `main crop>winter crop`. Use `bare` for nothing. Example: `corn>cereal_rye;soybean>bare` means year 1 is corn and then rye over winter, and year 2 is soybean and then a bare winter.
 
 **Adding a new field**: add it to `data/fields.json`, then run the four fetch scripts:
 
@@ -225,13 +225,13 @@ Rule-based. No machine learning and no AI in the scoring. Rule weights are in `R
 **The `field` object**
 
 ```js
-{ id: 'henry_va', irrigated: false, texture: 'Sandy loam',
+{ id: 'henry_va', region: 'east', irrigated: false, sellsForage: false, texture: 'Sandy loam',
   soil: { /* saved soil file */ }, ind: { /* computeFieldIndicators output */ } }
 ```
 
 **`weights`**: slider values from 0 to 5, `{water, soil, income, forage, erosion}`. If all are 0, every priority counts equally.
 
-**`constraints`**: `{noHay: true}` removes rotations that include a forage crop.
+**`constraints`**: `{noHay: true}` removes rotations that include a forage crop. Rotations from another region are always removed.
 
 **Fit score** = Σ (slider × sub-score) ÷ Σ sliders.
 
@@ -241,7 +241,7 @@ Rule-based. No machine learning and no AI in the scoring. Rule weights are in `R
 | --- | --- |
 | Save water | 100 × (3 − average water need of main crops) ÷ 2. On a rain-fed field, high-water crops lose 10 points for each June–August month whose recent root-zone wetness is below normal, and 10 more on sandy soil. |
 | Build soil health | 40 × share of winters with living roots + 25 × share of years with a nitrogen fixer + 15 if any deep-rooted crop + 10 per extra plant family (up to 2) |
-| Extra income | Harvests per year ÷ 1.5 × 100 (forage = half a harvest), minus 0.5 × recent hot days × missing heat tolerance (max 30), minus 10 per frost-timing risk. Counts harvests, not dollars. |
+| Extra income | Harvests per year ÷ 1.5 × 100 (hay = half a harvest, or a full one if the farmer ticks "I can sell hay or feed it"), minus 0.5 × recent hot days × missing heat tolerance (max 30), minus 10 per frost-timing risk. Counts harvests, not dollars. |
 | Forage | Average yearly forage value ÷ 3 × 100 |
 | Reduce erosion | Share of the year with a living crop, where each month is weighted by its extreme-rain days per year (+0.05 base) |
 

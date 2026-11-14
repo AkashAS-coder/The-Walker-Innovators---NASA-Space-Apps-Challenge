@@ -18,8 +18,8 @@ test('longest dry run counts consecutive days under 1 mm', () => {
 });
 
 test('every crop in rotations.csv exists in crops.csv', () => {
-  for (const line of read('data/rotations.csv').trim().split('\n').slice(1)) {
-    for (const id of line.split(',')[2].split(/[;>]/)) {
+  for (const row of sc.parseCsv(read('data/rotations.csv'))) {
+    for (const id of row.sequence.split(/[;>]/)) {
       assert.ok(id === 'bare' || crops[id], `unknown crop ${id}`);
     }
   }
@@ -71,4 +71,29 @@ test('a tiny soil-moisture dip is noise, a clear one costs thirsty crops points'
   const clear = sc.scoreRotation(corn, fakeField(-0.035), even).sub.water.score;
   assert.strictEqual(tiny, flat);
   assert.ok(clear < flat);
+});
+
+test('Nevada field only gets western rotations, with no soybean', () => {
+  const power = JSON.parse(read('data/raw/power_fallon_nv.json'));
+  const field = { id: 'fallon_nv', region: 'west', irrigated: true, sellsForage: true, texture: 'Loam',
+                  soil: JSON.parse(read('data/raw/soil_fallon_nv.json')), ind: ind.computeFieldIndicators(power, null) };
+  const weights = { water: 3, soil: 3, income: 3, forage: 1, erosion: 3 };
+  const results = sc.compareRotations(rotations, 'alfalfa_then_corn', field, weights);
+  assert.strictEqual(results.length, 3);
+  for (const r of results) {
+    assert.strictEqual(r.rotation.region, 'west');
+    assert.ok(!r.rotation.years.some(y => [y.main, y.winter].some(c => c && c.id.startsWith('soybean'))),
+              `${r.rotation.id} includes soybean`);
+  }
+});
+
+test('selling hay raises the income score of an alfalfa rotation', () => {
+  const power = JSON.parse(read('data/raw/power_fallon_nv.json'));
+  const base = { id: 'fallon_nv', region: 'west', irrigated: true, texture: 'Loam',
+                 soil: null, ind: ind.computeFieldIndicators(power, null) };
+  const rot = rotations.find(r => r.id === 'alfalfa_then_corn');
+  const w = { income: 1 };
+  const no = sc.scoreRotation(rot, { ...base, sellsForage: false }, w).sub.income.score;
+  const yes = sc.scoreRotation(rot, { ...base, sellsForage: true }, w).sub.income.score;
+  assert.ok(yes > no);
 });

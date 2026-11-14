@@ -75,6 +75,7 @@ function parseRotations(rows, crops) {
   return rows.map(r => ({
     id: r.id,
     name: r.name,
+    region: r.region || 'any', // east = humid rain-fed (Virginia), west = dry irrigated (Nevada)
     description: r.description,
     years: r.sequence.split(';').map(year => {
       const [main, winter] = year.split('>');
@@ -204,6 +205,8 @@ function frostRisks(rotation, field) {
 }
 
 function scoreIncome(rotation, field) {
+  // Hay counts as a full harvest only if the farmer says they can sell it or feed it.
+  const forageValue = field.sellsForage ? 1 : RULES.FORAGE_HARVEST_VALUE;
   let harvests = 0;
   for (const y of rotation.years) {
     // A perennial like alfalfa fills both slots of a year, so count it only once.
@@ -211,12 +214,16 @@ function scoreIncome(rotation, field) {
     for (const c of slots) {
       if (!c) continue;
       if (c.role === 'cash') harvests += 1;
-      if (c.role === 'forage' && c === y.main) harvests += RULES.FORAGE_HARVEST_VALUE;
+      if (c.role === 'forage' && c === y.main) harvests += forageValue;
     }
   }
   const perYear = harvests / rotation.years.length;
   let score = perYear / RULES.INCOME_FULL_HARVESTS * 100;
   const reasons = [`About ${perYear.toFixed(1)} harvests a year (counted, not dollars; local prices not checked).`];
+  if (allCrops(rotation).some(c => c.role === 'forage')) {
+    reasons.push(field.sellsForage ? 'Hay counts as a full harvest because you said you can sell or feed it.'
+                                   : 'Hay counts as half a harvest because you did not say you can sell or feed it.');
+  }
 
   const hotDays = field.ind.heat.recent || 0;
   const summer = rotation.years.map(y => y.main).filter(c => c && c.season !== 'cool');
@@ -224,7 +231,7 @@ function scoreIncome(rotation, field) {
   const heatPenalty = Math.min(RULES.HEAT_PENALTY_MAX, hotDays * missingTolerance * RULES.HEAT_PENALTY_PER_DAY);
   if (heatPenalty > 0) {
     score -= heatPenalty;
-    reasons.push(`Recent summers average ${hotDays.toFixed(0)} days above 32 °C (NASA POWER); ` +
+    reasons.push(`Recent summers average ${hotDays.toFixed(0)} days above 90 °F / 32 °C (NASA POWER); ` +
                  `heat-sensitive crops put yield at risk (−${round(heatPenalty)}).`);
   }
   const frost = frostRisks(rotation, field);
@@ -340,7 +347,13 @@ function buildExplanation(result, current, field, weights) {
   ];
   if (field.ind.ndvi.available) unknowns.push('A MODIS pixel is 250 m wide and may include land next to your field.');
   else unknowns.push('Satellite greenness (NDVI) is missing for this field, so bare-field timing comes only from the crop calendar.');
-  if (field.id !== 'henry_va') unknowns.push('Planting months come from a Virginia calendar and may not fit this region.');
+  if (field.irrigated && result.sub.income.reasons.some(t => t.includes('heat-sensitive'))) {
+    unknowns.push('The heat penalty treats irrigated and rain-fed fields the same; watering may ease heat stress here.');
+  }
+  if (field.region === 'west') {
+    unknowns.push('Planting months come from a Virginia calendar and may not fit this region.');
+    unknowns.push('Western rotations were built from crops CropScape records near this field, not from a local extension guide.');
+  }
   if (field.ind.missingDays) unknowns.push(`${field.ind.missingDays} days of weather data were missing and were skipped.`);
   unknowns.push('Yields under your soil and weather are not modeled.');
 
@@ -358,7 +371,9 @@ function buildExplanation(result, current, field, weights) {
 
 // Score every rotation, keep the current one, and pick the two best alternatives.
 function compareRotations(rotations, currentId, field, weights, constraints = {}) {
-  const allowed = r => !(constraints.noHay && allCrops(r).some(c => c.role === 'forage'));
+  // Only rotations meant for this field's region, and no hay crops if the farmer has no hay equipment.
+  const inRegion = r => !field.region || r.region === 'any' || r.region === field.region;
+  const allowed = r => inRegion(r) && !(constraints.noHay && allCrops(r).some(c => c.role === 'forage'));
   const current = scoreRotation(rotations.find(r => r.id === currentId), field, weights);
   const alternatives = rotations
     .filter(r => r.id !== currentId && allowed(r))
