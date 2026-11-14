@@ -6,3 +6,7 @@ CRESS*
 Research.pdf
 Stage 1.pdf
 *.xlsx
+# Secrets (API logins). Never publish.
+.env
+# macOS clutter
+.DS_Store
