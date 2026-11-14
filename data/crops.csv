@@ -1,0 +1,11 @@
+id,name,role,family,season,start_month,end_month,water_need,heat_tolerance,frost_tolerance,root_depth,nitrogen_fixing,forage_value,source,verified
+corn,Corn (grain),cash,grass,warm,4,9,high,medium,low,medium,no,medium,https://www.pubs.ext.vt.edu/content/dam/pubs_ext_vt_edu/424/424-100/spes-299.pdf,no
+soybean,Soybean (full season),cash,legume,warm,5,10,medium,medium,low,medium,yes,low,https://www.pubs.ext.vt.edu/content/dam/pubs_ext_vt_edu/424/424-100/spes-299.pdf,no
+soybean_double,Soybean (double crop after wheat),cash,legume,warm,6,11,medium,medium,low,medium,yes,low,https://www.pubs.ext.vt.edu/content/dam/pubs_ext_vt_edu/424/424-100/spes-299.pdf,no
+winter_wheat,Winter wheat,cash,grass,cool,10,6,low,low,high,medium,no,medium,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/winter-wheat/,no
+grain_sorghum,Grain sorghum,cash,grass,warm,5,10,low,high,low,deep,no,medium,https://www.pubs.ext.vt.edu/content/dam/pubs_ext_vt_edu/424/424-100/spes-299.pdf,no
+alfalfa,Alfalfa (hay),forage,legume,perennial,1,12,high,medium,high,deep,yes,high,https://www.pubs.ext.vt.edu/content/dam/pubs_ext_vt_edu/424/424-100/spes-299.pdf,no
+cereal_rye,Cereal rye (cover),cover,grass,cool,10,4,low,low,high,medium,no,medium,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/cereal-rye/,no
+crimson_clover,Crimson clover (cover),cover,legume,cool,9,4,low,low,medium,shallow,yes,medium,https://www.sare.org/publications/managing-cover-crops-profitably/legume-cover-crops/crimson-clover/,no
+sorghum_sudangrass,Sorghum-sudangrass (summer forage),forage,grass,warm,6,9,low,high,low,deep,no,high,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/sorghum-sudangrass/,no
+forage_radish,Forage radish (cover),cover,brassica,cool,8,12,low,low,medium,deep,no,low,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/brassicas-and-mustards/,no

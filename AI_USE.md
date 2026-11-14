@@ -9,3 +9,8 @@
 - 2026-11-14, Claude Code, RESOURCES.md: listed every dataset and tool from the challenge brief plus the Meteomatics sponsor API, with links (checked with curl), and marked which ones our plan uses. Credentials kept out of the repo.
 - 2026-11-14, Claude Code, CLAUDE.md: added the rule that commits and PRs never credit Claude.
 - 2026-11-14, Claude Code, docs/PLAN.md and GAME_PLAN.md: added a two-person work split (file ownership, interface agreement, git routine for two Claude Code sessions, meet-up points).
+- 2026-11-14, Claude Code, index.html, css/style.css, js/app.js, js/indicators.js, js/scoring.js: wrote the first working version of the website (field picker, farm inputs, NASA field report, charts, sliders, three-option comparison with the five boxes, glossary). Scoring is rule-based; no AI is used when the site runs.
+- 2026-11-14, Claude Code, src/fetch_power.py, src/fetch_ndvi.py, src/fetch_soil.py, src/fetch_cropscape.py: wrote the scripts that download NASA POWER, MODIS NDVI, USDA soil and CropScape data, and ran them to save data/raw/.
+- 2026-11-14, Claude Code, data/fields.json: picked the two demo fields by scanning CropScape for real crop pixels (Henry County, VA, and near Fallon, NV).
+- 2026-11-14, Claude Code, data/crops.csv, data/rotations.csv: drafted the crop-traits table (low/medium/high ratings with a source link per row, all marked verified=no for the team to check) and eight candidate rotations.
+- 2026-11-14, Claude Code, docs/API.md, README.md, SOURCES.md, tests/run.test.js: wrote the API documentation, README, sources list and tests.

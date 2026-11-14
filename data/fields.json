@@ -1,0 +1,22 @@
+[
+  {
+    "id": "henry_va",
+    "name": "Demo field in northern Henry County",
+    "place": "Henry County, Virginia",
+    "lat": 36.83,
+    "lon": -79.81,
+    "irrigated": false,
+    "default_rotation": "corn_wheat_soy",
+    "note": "A real crop field picked from the USDA Cropland Data Layer (CropScape). Its recorded history is corn, wheat with double-crop soybean, and soybean. We do not know who farms it, and no farmer's details are used."
+  },
+  {
+    "id": "fallon_nv",
+    "name": "Second region near Fallon",
+    "place": "Churchill County, Nevada",
+    "lat": 39.41,
+    "lon": -118.78,
+    "irrigated": true,
+    "default_rotation": "alfalfa_grain",
+    "note": "A real irrigated field picked from the USDA Cropland Data Layer (CropScape). Its recorded history is alfalfa with some years of corn. Shows the tool works outside Virginia."
+  }
+]

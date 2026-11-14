@@ -1,0 +1,22 @@
+{
+  "mukey": "581947",
+  "muname": "Clifford fine sandy loam, 2 to 8 percent slopes",
+  "farmlndcl": "All areas are prime farmland",
+  "compname": "Clifford",
+  "comppct_r": "93",
+  "slope_r": "5",
+  "drainagecl": "Well drained",
+  "hydgrp": "B",
+  "hzdept_r": "0",
+  "hzdepb_r": "19",
+  "om_r": "1.5",
+  "awc_r": "0.14",
+  "kwfact": ".24",
+  "sandtotal_r": "60",
+  "silttotal_r": "27",
+  "claytotal_r": "13",
+  "texdesc": "Fine sandy loam",
+  "latitude": 36.83,
+  "longitude": -79.81,
+  "source": "https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"
+}

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Field Shift Rotation Explorer</title>
+  <meta name="description" content="Compare three crop rotations for your field using 20 years of NASA Earth data. Built by The Walker Innovators for the NASA Space Apps Challenge 2026.">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <h1>Field Shift Rotation Explorer</h1>
+      <p class="lead">See how your field's weather and soil are changing, then compare three crop rotations side by side, including the one you grow now. Every option shows its evidence and what we still don't know.</p>
+      <p class="mission">Compare rotations · reveal trade-offs · understand risk · make uncertainty visible</p>
+    </div>
+  </header>
+
+  <div class="notice wrap" role="note">
+    <strong>This tool supports your decision. It does not replace your judgment or your local extension agent.</strong>
+  </div>
+
+  <main class="wrap">
+    <p id="loading" class="loading">Loading saved NASA data…</p>
+    <p id="load-error" class="error" hidden></p>
+
+    <!-- Step 1 -->
+    <section id="step-field" class="step">
+      <h2><span class="num">1</span> Pick your field</h2>
+      <div class="two-col">
+        <div>
+          <label for="field-select">Field</label>
+          <select id="field-select"></select>
+          <p id="field-place" class="muted"></p>
+          <p id="field-note" class="small muted"></p>
+          <p class="small muted">Tip: click a pin on the map. Only fields with saved NASA data can be picked. To add a field, see the README.</p>
+        </div>
+        <div id="map" class="map" aria-label="Map of available fields"></div>
+      </div>
+    </section>
+
+    <!-- Step 2 -->
+    <section id="step-farm" class="step">
+      <h2><span class="num">2</span> Tell us about your farm</h2>
+      <div class="form-grid">
+        <div>
+          <label for="rotation-select">What you grow now</label>
+          <select id="rotation-select"></select>
+          <p class="small muted">Pick the closest match. The strip below shows what satellites recorded on this field.</p>
+        </div>
+        <div>
+          <label for="texture-select">Soil texture</label>
+          <select id="texture-select"></select>
+          <p class="small muted" id="texture-hint"></p>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="irrigated"> My field is irrigated</label>
+          <label><input type="checkbox" id="no-hay"> I don't have hay or forage equipment</label>
+        </div>
+      </div>
+      <h3>What you've grown <span class="tag tag-usda">USDA CropScape</span></h3>
+      <div id="history" class="history"></div>
+      <p class="small muted">From the USDA Cropland Data Layer, a yearly crop map made from satellite images at 30 m. It can be wrong for a single spot, so correct the rotation above if needed.</p>
+    </section>
+
+    <!-- Step 3 -->
+    <section id="step-report" class="step">
+      <h2><span class="num">3</span> Your field today</h2>
+      <p class="muted" id="report-intro"></p>
+
+      <h3>Weather and water <span class="tag">NASA POWER</span></h3>
+      <div id="weather-cards" class="cards"></div>
+
+      <h3>Soil <span class="tag tag-usda">USDA soil survey</span></h3>
+      <div id="soil-card" class="cards"></div>
+
+      <div class="chart-grid">
+        <figure class="chart-box">
+          <figcaption>How your summers and seasons changed, year by year <span class="tag">NASA POWER</span></figcaption>
+          <canvas id="trend-chart" height="220"></canvas>
+          <div class="chart-toggle" id="trend-toggle"></div>
+        </figure>
+        <figure class="chart-box">
+          <figcaption>When the field is green or bare (median greenness by month) <span class="tag tag-modis">MODIS NDVI</span></figcaption>
+          <canvas id="ndvi-chart" height="220"></canvas>
+          <p class="small muted" id="ndvi-note"></p>
+        </figure>
+      </div>
+
+      <h3>Risky months for what you grow now</h3>
+      <p class="small muted">Each box is a month. Green means a crop is growing in every year of your rotation. Warnings show when crops look vulnerable or the ground is bare during heavy rain.</p>
+      <div id="risk-strip" class="month-strip"></div>
+    </section>
+
+    <!-- Step 4 -->
+    <section id="step-priorities" class="step">
+      <h2><span class="num">4</span> What matters to you</h2>
+      <p class="muted">Move the sliders. The options below re-rank right away.</p>
+      <div id="sliders" class="sliders"></div>
+    </section>
+
+    <!-- Step 5 -->
+    <section id="step-compare" class="step">
+      <h2><span class="num">5</span> Three options side by side</h2>
+      <p class="muted">Your current rotation plus the two alternatives that best fit your field and your priorities. Scores run from 0 to 100 and come from the rules listed in the "How scoring works" section.</p>
+      <div id="options" class="options"></div>
+    </section>
+
+    <!-- Glossary -->
+    <section id="glossary" class="step">
+      <h2>Words we use</h2>
+      <dl class="glossary">
+        <dt>NDVI (greenness)</dt><dd>A satellite measure of how green and leafy the ground is, from about 0 (bare soil) to 1 (thick green crop).</dd>
+        <dt>Evapotranspiration</dt><dd>Water that leaves a field as vapor, from the soil drying and from plants "breathing out" through their leaves.</dd>
+        <dt>Soil-moisture anomaly</dt><dd>How much wetter or drier the soil is than usual for that month. Negative means drier than normal.</dd>
+        <dt>Frost risk</dt><dd>The chance of a night at or below freezing (0 °C, 32 °F) while a frost-sensitive crop is in the ground.</dd>
+        <dt>Frost-free season</dt><dd>The number of days between the last spring frost and the first fall frost.</dd>
+        <dt>Water balance</dt><dd>Rain that falls minus the water crops use. When it goes negative, the soil dries out.</dd>
+        <dt>Bare-field window</dt><dd>Weeks when nothing is growing, so soil can wash or blow away and no roots feed the soil.</dd>
+        <dt>Satellite vs ground data</dt><dd>Satellites see the whole field from above, often at coarse resolution. A rain gauge is exact, but only for one spot. Using both gives a better picture.</dd>
+        <dt>Nitrogen-fixing crop</dt><dd>Legumes like soybean, clover and alfalfa host bacteria on their roots that pull nitrogen from the air into the soil, which can cut fertilizer needs.</dd>
+        <dt>Cover crop</dt><dd>A crop grown to protect and feed the soil, not to sell. It keeps roots in the ground between cash crops.</dd>
+        <dt>Deep-rooting crop</dt><dd>Crops like sorghum, alfalfa and radish push roots deep, which breaks up packed soil and helps rain soak in.</dd>
+        <dt>Drought-tolerant crop</dt><dd>A crop such as sorghum that keeps growing through dry spells better than thirstier crops such as corn.</dd>
+      </dl>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="step">
+      <h2>How scoring works</h2>
+      <p>No black box. Each option gets five sub-scores from simple rules. Your sliders decide how much each counts.</p>
+      <ul class="rules">
+        <li><strong>Save water:</strong> starts from the main crops' water need in our crop table. On a rain-fed field, thirsty crops lose points for every summer month where NASA POWER shows root-zone soil drier than normal in 2021–2025, and on sandy soil.</li>
+        <li><strong>Build soil health:</strong> points for living roots every winter, a nitrogen-fixing crop, a deep-rooted crop, and more plant families.</li>
+        <li><strong>Extra income:</strong> harvests per year (not dollars, since we have no local prices), minus points for heat-sensitive crops when recent summers are hot and for crops whose window crosses your usual frost dates.</li>
+        <li><strong>Forage:</strong> the forage value of the crops in our table.</li>
+        <li><strong>Reduce erosion:</strong> how much of the year the ground is covered, with extra weight on the months when NASA POWER shows heavy rain (over 50 mm in a day) has fallen.</li>
+      </ul>
+      <p class="small">The scoring code is in <code>js/scoring.js</code> and the thresholds are in <code>js/indicators.js</code>. The API docs are in <a href="docs/API.md">docs/API.md</a>.</p>
+    </section>
+
+    <!-- Sources -->
+    <section id="sources" class="step">
+      <h2>Data we used</h2>
+      <ul class="sources">
+        <li><strong>NASA POWER</strong> (daily temperature, rain, soil wetness, 2005–2025): <a href="https://power.larc.nasa.gov/">power.larc.nasa.gov</a></li>
+        <li><strong>MODIS MOD13Q1 NDVI</strong> (250 m greenness every 16 days) via the ORNL DAAC subset service: <a href="https://modis.ornl.gov/rst/api/v1/">modis.ornl.gov</a></li>
+        <li><strong>USDA NRCS soil survey (SSURGO)</strong> via Soil Data Access: <a href="https://sdmdataaccess.sc.egov.usda.gov/">sdmdataaccess.sc.egov.usda.gov</a></li>
+        <li><strong>USDA NASS Cropland Data Layer (CropScape)</strong> for each field's crop history, 2016–2025: <a href="https://nassgeodata.gmu.edu/CropScape/">nassgeodata.gmu.edu/CropScape</a></li>
+        <li><strong>Crop traits</strong>: Virginia Cooperative Extension Agronomy Handbook and SARE <em>Managing Cover Crops Profitably</em>. Each row links to its source in <a href="data/crops.csv">data/crops.csv</a>.</li>
+      </ul>
+      <p class="small muted">Full list with licenses in SOURCES.md.</p>
+    </section>
+  </main>
+
+  <footer class="bottom">
+    <div class="wrap">
+      <p><strong>This supports your decision. It does not replace your judgment or your extension agent.</strong></p>
+      <p class="small">Made by The Walker Innovators for the NASA Space Apps Challenge 2026, "Field Shift: Adapting Farms with NASA Data." Map data © OpenStreetMap contributors.</p>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="js/indicators.js"></script>
+  <script src="js/scoring.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

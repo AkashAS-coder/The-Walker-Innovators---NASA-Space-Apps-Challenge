@@ -5,9 +5,9 @@ Guidance for Claude Code in this repo. Team: The Walker Innovators (three high s
 ## Fill in first (team decisions)
 
 - Project name: TODO
-- Stack: TODO (Python + Streamlit, or plain HTML/JS + Leaflet + Chart.js). Delete the commands below for the one not used.
-- Demo field: TODO (county, latitude, longitude; default near Martinsville, VA, lat 36.69, lon -79.87)
-- Current rotation for the demo field: TODO
+- Stack: plain HTML/JS + Leaflet + Chart.js (static site, GitHub Pages). Fetch scripts are Python standard library only.
+- Demo field: Henry County, VA, lat 36.83, lon -79.81 (a real crop pixel found in CropScape; the Martinsville default point was forest). Second region: near Fallon, NV, lat 39.41, lon -118.78.
+- Current rotation for the demo field: corn, then wheat with double-crop soybean (from CropScape 2016–2025)
 - Public app link: TODO
 
 If a TODO above is still unfilled, ask before assuming.

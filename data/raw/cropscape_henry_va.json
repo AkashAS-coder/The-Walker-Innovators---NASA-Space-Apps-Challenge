@@ -1,0 +1,19 @@
+{
+  "latitude": 36.83,
+  "longitude": -79.81,
+  "albers_x": 1423654.7,
+  "albers_y": 1653270.7,
+  "source": "USDA NASS Cropland Data Layer via https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLValue",
+  "history": {
+    "2016": "Dbl Crop WinWht/Soybeans",
+    "2017": "Corn",
+    "2018": "Dbl Crop WinWht/Soybeans",
+    "2019": "Sunflowers",
+    "2020": "Corn",
+    "2021": "Soybeans",
+    "2022": "Corn",
+    "2023": "Dbl Crop WinWht/Soybeans",
+    "2024": "Sunflowers",
+    "2025": "Soybeans"
+  }
+}

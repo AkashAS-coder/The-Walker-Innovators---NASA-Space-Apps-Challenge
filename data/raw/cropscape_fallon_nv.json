@@ -1,0 +1,19 @@
+{
+  "latitude": 39.41,
+  "longitude": -118.78,
+  "albers_x": -1924992.9,
+  "albers_y": 2052688.9,
+  "source": "USDA NASS Cropland Data Layer via https://nassgeodata.gmu.edu/axis2/services/CDLService/GetCDLValue",
+  "history": {
+    "2016": "Alfalfa",
+    "2017": "Alfalfa",
+    "2018": "Alfalfa",
+    "2019": "Corn",
+    "2020": "Corn",
+    "2021": "Corn",
+    "2022": "Alfalfa",
+    "2023": "Alfalfa",
+    "2024": "Alfalfa",
+    "2025": "Alfalfa"
+  }
+}
