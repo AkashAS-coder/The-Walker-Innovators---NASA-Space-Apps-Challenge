@@ -97,3 +97,34 @@ test('selling hay raises the income score of an alfalfa rotation', () => {
   const yes = sc.scoreRotation(rot, { ...base, sellsForage: true }, w).sub.income.score;
   assert.ok(yes > no);
 });
+
+// A fake field where January gets heavy rain and June soil is clearly drier than usual.
+function rainyJanField() {
+  const field = fakeField(-0.035);
+  field.ind.monthly[0].extremeRainPerYear = 0.2;
+  return field;
+}
+const warningsFor = (id, field) => {
+  const res = sc.scoreRotation(rotations.find(x => x.id === id), field, even);
+  return Object.fromEntries(sc.soilWarnings(res, field).map(w => [w.id, w.lit]));
+};
+
+test('bare corn-soybean lights the erosion and organic-matter warnings', () => {
+  const w = warningsFor('corn_soy', rainyJanField());
+  assert.strictEqual(w.erosion, true);   // bare in rainy January
+  assert.strictEqual(w.organic, true);   // no living roots over winter
+  assert.strictEqual(w.drying, true);    // thirsty corn in a dry June, rain-fed
+});
+
+test('a cover crop turns off erosion and organic-matter warnings, irrigation turns off drying', () => {
+  const field = rainyJanField();
+  const w = warningsFor('corn_soy_cover', field);
+  assert.strictEqual(w.erosion, false);
+  assert.strictEqual(w.organic, false);
+  assert.strictEqual(warningsFor('corn_soy', { ...field, irrigated: true }).drying, false);
+});
+
+test('a rotation with no legume lights the nitrogen warning', () => {
+  assert.strictEqual(warningsFor('grain_no_hay', rainyJanField()).nitrogen, true);
+  assert.strictEqual(warningsFor('corn_soy', rainyJanField()).nitrogen, false);
+});

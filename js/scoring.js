@@ -36,6 +36,12 @@ const RULES = {
   FROST_PENALTY: 10,       // per frost-sensitive crop whose window crosses the usual frost dates
   // Erosion: every month gets this small base weight, plus its extreme-rain days
   EROSION_BASE_WEIGHT: 0.05,
+  // Soil warning signs: a month is a "heavy-rain month" if it averages more than this many
+  // days a year over 50 mm. Same cut-off already used in scoreErosion and vulnerableMonths.
+  HEAVY_RAIN_MONTH: 0.05,
+  // Soil warning signs: slope (%) at which bare ground washes away more easily.
+  // Same 7% line the soil card already uses in app.js.
+  STEEP_SLOPE_PCT: 7,
 };
 
 // ---------- reading the CSV tables ----------
@@ -345,7 +351,15 @@ function buildExplanation(result, current, field, weights) {
     'Local prices and markets were not checked, so income is counted in harvests, not dollars.',
     'NASA POWER weather is for a grid cell about 50 km wide, not your exact field.',
   ];
-  if (field.ind.ndvi.available) unknowns.push('A MODIS pixel is 250 m wide and may include land next to your field.');
+  if (field.ind.ndvi.available) {
+    unknowns.push('A MODIS pixel is 250 m wide and may include land next to your field.');
+    // MOD13Q1 makes 23 images a year (one per 16 days). Say so if some were never saved.
+    const pts = field.ind.ndvi.points;
+    const expected = 23 * new Set(pts.map(p => p.year)).size;
+    if (pts.length < expected) {
+      unknowns.push(`Only ${pts.length} of about ${expected} satellite greenness images were saved; the rest failed to download.`);
+    }
+  }
   else unknowns.push('Satellite greenness (NDVI) is missing for this field, so bare-field timing comes only from the crop calendar.');
   if (field.irrigated && result.sub.income.reasons.some(t => t.includes('heat-sensitive'))) {
     unknowns.push('The heat penalty treats irrigated and rain-fed fields the same; watering may ease heat stress here.');
@@ -369,6 +383,76 @@ function buildExplanation(result, current, field, weights) {
   return { why, evidence, benefits, unknowns, checkLocally };
 }
 
+// ---------- soil warning signs ----------
+
+// Four signs that a crop cycle wears soil down, checked for one rotation on one field.
+// Each follows a soil health principle from USDA NRCS and SARE: keep the soil covered,
+// keep living roots in the ground, add legumes, and match crops to the water you have.
+// Returns { id, label, lit, number, reason, source } for each sign. lit = the warning is on.
+function soilWarnings(result, field) {
+  const r = result.rotation;
+  const months = field.ind.monthly;
+  const cover = result.cover;
+
+  // 1. Erosion: bare ground in months when heavy rain falls.
+  const exposed = months.filter((m, i) => cover[i] < 1 && m.extremeRainPerYear > RULES.HEAVY_RAIN_MONTH);
+  const slope = field.soil ? Number(field.soil.slope_r) : null;
+  const steep = slope !== null && slope >= RULES.STEEP_SLOPE_PCT;
+  const erosion = {
+    id: 'erosion', label: 'Soil washing away',
+    lit: exposed.length > 0,
+    number: `${exposed.length} heavy-rain month${exposed.length === 1 ? '' : 's'} with bare ground`,
+    reason: exposed.length
+      ? `Ground is bare in some years during ${exposed.map(m => m.name).join(', ')}, when days with over 2 in (50 mm) of rain happen` +
+        (steep ? `, on a ${slope}% slope.` : '.')
+      : 'Something is growing in every month when heavy rain usually falls.',
+    source: steep ? 'NASA POWER rain + USDA soil survey slope + crop calendar' : 'NASA POWER rain + crop calendar',
+  };
+
+  // 2. Organic-matter loss: winters with no living roots feeding the soil.
+  const years = r.years;
+  const winterRoots = years.filter(y => y.winter || (y.main && y.main.season === 'perennial')).length / years.length;
+  const organic = {
+    id: 'organic', label: 'Soil losing organic matter',
+    lit: winterRoots < 1,
+    number: `Living roots in ${round(winterRoots * 100)}% of winters`,
+    reason: winterRoots < 1
+      ? `${result.bareMonths.length} month${result.bareMonths.length === 1 ? '' : 's'} a year can sit bare, so no roots or residue feed the soil then.`
+      : 'A crop or cover crop holds the ground every winter, so roots keep feeding the soil.',
+    source: 'Crop calendar' + (field.ind.ndvi.available ? ' + MODIS NDVI' : ''),
+  };
+
+  // 3. Nitrogen loss: no legume anywhere in the cycle.
+  const legumes = uniqueCrops(r).filter(c => c.fixesN);
+  const nitrogen = {
+    id: 'nitrogen', label: 'Nitrogen running down',
+    lit: legumes.length === 0,
+    number: legumes.length ? `Legume: ${legumes.map(c => c.name).join(', ')}` : 'No legume in the cycle',
+    reason: legumes.length
+      ? 'A nitrogen-fixing legume puts some nitrogen back into the soil.'
+      : 'No crop in this cycle fixes nitrogen, so all of it has to come from fertilizer.',
+    source: 'Crop table (VCE, SARE)',
+  };
+
+  // 4. Drying soil: thirsty crops on a rain-fed field in months when NASA POWER shows drier root-zone soil.
+  const dryMonths = months.filter(m => m.wetAnomaly !== null && m.wetAnomaly < THRESHOLDS.DRY_SOIL_ANOMALY);
+  const thirsty = uniqueCrops(r).filter(c => c.water === 3 &&
+    dryMonths.some(m => inWindow(c, m.month)));
+  const drying = {
+    id: 'drying', label: 'Thirsty crops in drying months',
+    lit: !field.irrigated && thirsty.length > 0,
+    number: dryMonths.length ? `${dryMonths.length} month${dryMonths.length === 1 ? '' : 's'} drier than usual` : 'No month drier than usual',
+    reason: field.irrigated
+      ? 'Irrigated field, so drier months matter less for this check.'
+      : thirsty.length
+        ? `${thirsty.map(c => c.name).join(', ')} need${thirsty.length === 1 ? 's' : ''} a lot of water and grow${thirsty.length === 1 ? 's' : ''} in ${dryMonths.filter(m => thirsty.some(c => inWindow(c, m.month))).map(m => m.name).join(', ')}, when root-zone soil was drier than usual in ${THRESHOLDS.RECENT_YEARS.join('–')}.`
+        : 'No high-water crop grows in the months when soil was drier than usual.',
+    source: 'NASA POWER soil wetness (GWETROOT) + crop table',
+  };
+
+  return [erosion, organic, nitrogen, drying];
+}
+
 // Score every rotation, keep the current one, and pick the two best alternatives.
 function compareRotations(rotations, currentId, field, weights, constraints = {}) {
   // Only rotations meant for this field's region, and no hay crops if the farmer has no hay equipment.
@@ -380,17 +464,26 @@ function compareRotations(rotations, currentId, field, weights, constraints = {}
     .map(r => scoreRotation(r, field, weights))
     .sort((a, b) => b.total - a.total)
     .slice(0, 2);
-  return [current, ...alternatives].map(res => ({
-    ...res,
-    isCurrent: res === current,
-    explain: buildExplanation(res, current, field, weights),
-    vulnerable: vulnerableMonths(res, field),
-  }));
+  const currentWarnings = soilWarnings(current, field);
+  return [current, ...alternatives].map(res => {
+    const warnings = res === current ? currentWarnings : soilWarnings(res, field);
+    return {
+      ...res,
+      isCurrent: res === current,
+      explain: buildExplanation(res, current, field, weights),
+      vulnerable: vulnerableMonths(res, field),
+      warnings,
+      // Warning signs that are on for the current rotation but off for this one.
+      fixes: warnings.filter((w, i) => !w.lit && currentWarnings[i].lit).map(w => w.id),
+      // Warning signs that are off now but this rotation would turn on.
+      adds: warnings.filter((w, i) => w.lit && !currentWarnings[i].lit).map(w => w.id),
+    };
+  });
 }
 
 // In the browser dayToDateLabel comes from indicators.js; in Node we load it.
 if (typeof module !== 'undefined') {
   ({ dayToDateLabel, THRESHOLDS } = require('./indicators.js'));
   module.exports = { LEVEL, PRIORITIES, RULES, SOIL_TEXTURES, parseCsv, parseCrops, parseRotations, inWindow,
-    coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths };
+    coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths, soilWarnings };
 }
