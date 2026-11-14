@@ -543,13 +543,13 @@ function renderAccount() {
   const c = window.cloud || {};
   const user = c.user;
   $('nav-account').textContent = user ? 'Account' : 'Sign in';
-  $('signed-out').hidden = !c.ready || !!user;
+  $('signed-out').hidden = !!user; // the form always shows when signed out, even before Firebase is set up
   $('signed-in').hidden = !user;
   $('account-status').textContent =
     user ? `Signed in as ${user.email || 'a Google account'}. Your saved checks follow you to any device.`
     : c.ready ? 'You are not signed in.'
     : c.reason === 'loading' ? 'Checking sign-in…'
-    : 'Sign-in is not set up on this copy of the site yet. Everything else works, and checks save in this browser.';
+    : 'Sign in with Google or an email and password.';
   $('account-note').textContent = user
     ? 'Saved to your account and this browser. Only you can see them.'
     : 'Saved on this device only. Sign in to keep them on any device.';
@@ -558,6 +558,12 @@ function renderAccount() {
 
 async function runSignIn(action) {
   $('account-error').textContent = '';
+  if (!window.cloud || !window.cloud.ready) {
+    $('account-error').textContent = window.cloud && window.cloud.reason === 'loading'
+      ? 'Still connecting. Try again in a moment.'
+      : 'Sign-in is not connected yet: add the Firebase config in js/firebase-config.js (see the README). Your checks still save in this browser.';
+    return;
+  }
   try { await action(); } catch (err) { $('account-error').textContent = signInError(err); }
 }
 
