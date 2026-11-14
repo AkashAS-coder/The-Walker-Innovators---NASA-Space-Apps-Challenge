@@ -541,9 +541,10 @@ const SIGN_IN_ERRORS = {
   'auth/weak-password': 'Please use at least 6 characters.',
   'auth/invalid-email': 'That email address does not look right.',
   'auth/popup-closed-by-user': 'The Google window was closed before signing in.',
-  'auth/operation-not-allowed': 'This sign-in method is not turned on in our Firebase project yet.',
+  'auth/operation-not-allowed': 'This sign-in method is not turned on. Use your email and a password instead (refresh the page if you still see a Google button).',
 };
-const signInError = err => SIGN_IN_ERRORS[err.code] || `Sign-in did not work (${err.code || err.message}).`;
+// The Firebase code in brackets helps the team find the cause.
+const signInError = err => `${SIGN_IN_ERRORS[err.code] || 'Sign-in did not work.'} (${err.code || err.message})`;
 
 function renderAccount() {
   const c = window.cloud || {};

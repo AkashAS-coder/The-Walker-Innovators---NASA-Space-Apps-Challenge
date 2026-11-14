@@ -20,7 +20,8 @@ const MAX_QUESTION = 300;      // characters
 const MAX_RESULTS = 20000;     // characters of page text
 const MAX_HISTORY = 8;         // earlier messages kept in the conversation
 // Room for the answer plus any hidden "thinking" some models do first; too little gives empty answers.
-const MAX_ANSWER_TOKENS = 1500;
+const MAX_ANSWER_TOKENS = 3000;
+const MAX_THINKING_TOKENS = 500; // cap on that hidden thinking, so the answer always has room
 
 // What the helper is told before every conversation. It keeps the helper inside our rules.
 const HELPER_RULES = `You help a farmer read the results of the Field Shift Rotation Explorer, a rule-based tool
@@ -83,8 +84,8 @@ export default async req => {
         models,
         max_tokens: MAX_ANSWER_TOKENS,
         temperature: 0.3,
-        // Models that "think" first: keep it short and don't send the thinking back.
-        reasoning: { effort: 'low', exclude: true },
+        // Models that "think" first: cap the thinking and don't send it back.
+        reasoning: { max_tokens: MAX_THINKING_TOKENS, exclude: true },
         messages: [
           { role: 'system', content: `${HELPER_RULES}\n\nRESULTS:\n${results}` },
           ...history,
