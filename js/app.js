@@ -11,6 +11,7 @@ const state = {
   field: null,
   charts: {},
   trendKey: 'heatDays',
+  chat: [],      // the AI helper conversation so far: [{ role, content }]
 };
 
 const $ = id => document.getElementById(id);
@@ -317,8 +318,8 @@ function renderOptions() {
                                    { noHay: $('no-hay').checked });
   state.results = results; // kept so "Save to My farm" saves exactly what is on screen
   // Results changed, so the AI helper starts a fresh chat with the new numbers next time.
-  if (state.ask) addChatNote('Your results changed. The helper will use the new numbers from here on.');
-  state.ask = null;
+  if (state.chat && state.chat.length) addChatNote('Your results changed. The helper will use the new numbers from here on.');
+  state.chat = [];
   renderHelperContext();
   const best = Math.max(...results.slice(1).map(r => r.total));
 
@@ -554,7 +555,7 @@ function renderAccount() {
     user ? `Signed in as ${user.email || 'a Google account'}. Your saved checks follow you to any device.`
     : c.ready ? 'You are not signed in.'
     : c.reason === 'loading' ? 'Checking sign-in…'
-    : 'Sign in with Google or an email and password.';
+    : 'Sign in or create an account with your email and a password.';
   $('account-note').textContent = user
     ? 'Saved to your account and this browser. Only you can see them.'
     : 'Saved on this device only. Sign in to keep them on any device.';
@@ -609,7 +610,8 @@ window.addEventListener('cloud-change', renderAccount);
 
 // ---------- AI helper: answers questions about the results on screen ----------
 // The scores come from scoring.js. The helper only gets a text copy of what the page
-// already shows and is told to explain it, not to decide. See HELPER_RULES in cloud.js.
+// already shows and is told to explain it, not to decide. The AI call and its rules (HELPER_RULES)
+// are in netlify/functions/ask.mjs, which runs on Netlify so the API key stays secret.
 
 function resultsForHelper() {
   const f = state.field;
@@ -685,28 +687,41 @@ function clearChat() {
   $('helper-log').querySelectorAll('.row, .chat-note').forEach(el => el.remove());
   $('helper-empty').hidden = false;
   $('helper-log').scrollTop = 0;
-  state.ask = null;
+  state.chat = [];
 }
 
+// What the helper says for each kind of failure. Your results never change either way.
+const HELPER_ERRORS = {
+  'not-set-up': 'The AI helper is not set up on this copy of the site yet (no OpenRouter key on Netlify). Every score and explanation in the tool still works without it.',
+  'no-server': 'The AI helper only runs on the live Netlify site, not on a plain local server. Every score and explanation still works here.',
+  busy: 'The free AI service is busy right now. Wait a minute and try again. Your results are unchanged.',
+  other: 'The helper could not answer right now. Try again in a moment. Your results are unchanged.',
+};
+
 async function askHelper(question) {
-  const c = window.cloud || {};
   addMessage('you', question);
-  if (!c.ready) {
-    addMessage('err', 'The AI helper is not set up on this copy of the site yet. Every score and explanation in the tool still works without it.');
-    return;
-  }
   if (!state.results) { addMessage('err', 'Your results are still loading. Try again in a moment.'); return; }
   const answer = addMessage('bot', null);
   $('helper-send').disabled = true;
   try {
-    if (!state.ask) state.ask = c.newChat(resultsForHelper());
-    answer.textContent = await state.ask(question);
+    const res = await fetch('/.netlify/functions/ask', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ results: resultsForHelper(), history: state.chat, question }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || !data.answer) {
+      const kind = !data ? 'no-server' : data.error === 'not-set-up' ? 'not-set-up' : data.error === 'busy' ? 'busy' : 'other';
+      throw Object.assign(new Error(kind), { kind });
+    }
+    answer.textContent = data.answer;
+    state.chat.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
   } catch (err) {
-    console.error(err);
+    console.error('AI helper', err);
     const row = answer.closest('.row');
     row.className = 'row err';
     row.querySelector('.who')?.remove();
-    answer.textContent = 'The helper could not answer right now (the AI service may be busy). Your results are unchanged.';
+    answer.textContent = HELPER_ERRORS[err.kind] || HELPER_ERRORS.other;
   } finally {
     $('helper-send').disabled = false;
     $('helper-log').scrollTop = $('helper-log').scrollHeight;

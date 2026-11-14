@@ -59,18 +59,15 @@ node --test tests/run.test.js
 
 ## Sign-in and the AI helper (optional)
 
-- **Sign in** (the "Sign in" button at the top of every page opens a pop-up) uses Firebase Authentication, with Google or an email and password. When you're signed in, the checks you save on "My farm" are also stored in Cloud Firestore at `users/{your id}/checks/`, so they follow you to any device. We store only your email (inside Firebase Authentication) and the checks you choose to save. You never need an account: without one, checks save in your browser as before.
-- **"Ask AI"** (its own tab in the menu) is a chatbot that uses Google Gemini through Firebase AI Logic. It gets a text copy of what the page shows, including the scores, the five boxes and the weather and soil cards. It is told to explain only those numbers, to say when it doesn't know, and never to say what to plant. It does not change any score: scores come from the fixed rules in `js/scoring.js`. Its answers are labeled "AI answer" and can be wrong.
+- **Sign in** (the "Sign in" button at the top of every page opens a pop-up) uses Firebase Authentication with an email and password. When you're signed in, the checks you save on "My farm" are also stored in Cloud Firestore at `users/{your id}/checks/`, so they follow you to any device. We store only your email (inside Firebase Authentication) and the checks you choose to save. You never need an account: without one, checks save in your browser as before. [firestore.rules](firestore.rules) lets each user read and write only their own checks.
+- **"Ask AI"** (its own tab in the menu) is a chatbot. The page sends a text copy of what it shows (the scores, the five boxes, the weather and soil cards) and your question to a small Netlify Function, [netlify/functions/ask.mjs](netlify/functions/ask.mjs). The function adds the helper's rules and asks a free AI model on OpenRouter (Google Gemma, with backups). The helper is told to explain only those numbers, to say when it doesn't know, and never to say what to plant. It does not change any score: scores come from the fixed rules in `js/scoring.js`. Its answers are labeled "AI answer" and can be wrong.
 
-**Turning these on (one-time, about 10 minutes, done by the repo owner):**
+**Where the keys are:**
 
-1. At https://console.firebase.google.com create a project, then add a **Web app**. Copy its config into `js/firebase-config.js`. The web config is not a secret; never add a service-account key.
-2. **Authentication → Sign-in method:** turn on **Google** and **Email/Password**. Under **Settings → Authorized domains**, add your GitHub Pages domain (`<user>.github.io`). `localhost` is already allowed.
-3. **Firestore Database → Create database** (production mode). Paste [firestore.rules](firestore.rules) into the **Rules** tab and publish it. The rules let each user read and write only their own checks.
-4. **AI Logic → Get started → Gemini Developer API** (it has a no-cost tier).
-5. Reload the site. If Google later retires the model name, change `AI_MODEL` in `js/cloud.js`.
+- The OpenRouter key is a secret. It lives only in Netlify (Site configuration → Environment variables → `OPENROUTER_API_KEY`, marked "Contains secret values"). It is never in this repo or in the browser.
+- The Firebase web config in `js/firebase-config.js` is public by design (every visitor's browser needs it). It is protected by the Firestore rules and by limiting the key in Google Cloud to our site addresses.
 
-Until step 1 is done, the site works as before, and the sign-in page and the helper say they are not set up.
+**Hosting:** the site is deployed on Netlify from the `main` branch (settings in [netlify.toml](netlify.toml): no build command, publish the repo root, functions in `netlify/functions`). The AI helper only works on Netlify; on `python3 -m http.server` it says so and everything else still works. To change the AI model, set `OPENROUTER_MODEL` in Netlify, or edit `MODELS` in the function.
 
 ## Limits (what we know we don't know)
 
@@ -84,11 +81,11 @@ Until step 1 is done, the site works as before, and the sign-in page and the hel
 - Yields are not modeled.
 - The rankings come from transparent, hand-written scoring rules. They are not AI-generated and are not validated predictions: they have not been tested against real farm outcomes.
 - We don't compute soil loss in tons per acre. The RUSLE factors and the four warning signs are risk indicators, not measurements.
-- The AI helper can make mistakes even with its rules. It sees only the page's numbers, and the free Gemini tier has rate limits, so it may say it is busy during a demo.
+- The AI helper can make mistakes even with its rules. It sees only the page's numbers, and OpenRouter's free models have daily limits (about 50 requests a day without credits), so it may say it is busy during a demo.
 
 ## Libraries
 
-Leaflet 1.9.4 (BSD-2-Clause), Chart.js 4.4.1 (MIT), Firebase JS SDK 12.6.0 (Apache-2.0, optional sign-in and AI helper) and OpenStreetMap tiles (© OpenStreetMap contributors, ODbL), loaded from public CDNs.
+Leaflet 1.9.4 (BSD-2-Clause), Chart.js 4.4.1 (MIT), Firebase JS SDK 12.6.0 (Apache-2.0, optional sign-in) and OpenStreetMap tiles (© OpenStreetMap contributors, ODbL), loaded from public CDNs.
 
 ## AI use
 
