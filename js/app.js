@@ -243,16 +243,18 @@ function drawNdviChart() {
   }
   const years = new Set(ndvi.points.map(p => p.year));
   const bare = ndvi.byMonth.filter(m => m.bare).map(m => m.name);
+  const line = ndvi.byMonth.line.toFixed(2);
   $('ndvi-note').textContent = `${ndvi.points.length} satellite images from ${Math.min(...years)}–${Math.max(...years)}. ` +
-    (bare.length ? `Usually bare (below ${THRESHOLDS.BARE_NDVI}) in ${bare.join(', ')}: a window where a cover crop could fit.`
-                 : `Never usually below ${THRESHOLDS.BARE_NDVI}, so this spot looks green most of the year (it may be pasture or hay).`);
+    (bare.length ? `Low plant cover (below ${line}) in ${bare.join(', ')}: a window where a cover crop could fit. ` +
+                   `The line is ${THRESHOLDS.BARE_NDVI} or half of this field's greenest month, whichever is higher.`
+                 : `No month falls below ${line}, so this spot stays fairly green all year.`);
   if (typeof Chart === 'undefined') return;
   state.charts.ndvi = new Chart($('ndvi-chart'), {
     type: 'bar',
     data: {
       labels: ndvi.byMonth.map(m => m.name),
       datasets: [
-        { type: 'line', label: `Bare line (${THRESHOLDS.BARE_NDVI})`, data: ndvi.byMonth.map(() => THRESHOLDS.BARE_NDVI),
+        { type: 'line', label: `Low-cover line (${line})`, data: ndvi.byMonth.map(() => ndvi.byMonth.line),
           borderColor: '#a4471d', borderDash: [6, 4], pointRadius: 0 },
         { label: 'Median NDVI', data: ndvi.byMonth.map(m => m.median),
           backgroundColor: ndvi.byMonth.map(m => (m.bare ? '#c9a27a' : '#5c9b62')) },

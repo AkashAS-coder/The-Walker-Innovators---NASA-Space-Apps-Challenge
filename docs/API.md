@@ -191,7 +191,7 @@ All functions are pure (data in, numbers out). Thresholds are in `THRESHOLDS` at
 | `change(yearly, key)` | Yearly rows, a field name | `{early, recent, diff}`: averages for 2005–2009 and 2021–2025, and the difference |
 | `monthlyProfile(days)` | Days | 12 rows: `heatDaysPerYear`, `extremeRainPerYear`, `frostNightsPerYear`, `rainMmPerYear`, `rootWetLongTerm`, `rootWetRecent`, `wetAnomaly` |
 | `parseNdvi(ndviJson)` | Saved NDVI file or `null` | `[{date, year, doy, ndvi}]` |
-| `ndviByMonth(points)` | NDVI points | 12 rows: `median`, `bare` (median < `BARE_NDVI`), `count` |
+| `ndviByMonth(points)` | NDVI points | 12 rows: `median`, `bare` (median under the low-cover line), `count`; the array's `line` property is the cut-off used |
 | `bareWeeksByYear(points)` | NDVI points | Per year: `bareImages`, `bareWeeks`, `peak` |
 | `computeFieldIndicators(powerJson, ndviJson)` | Both saved files | Everything above in one object (`yearly`, `monthly`, `frostFree`, `heat`, `rain`, `drySpell`, `extremeRain`, `medianLastSpringFrost`, `medianFirstFallFrost`, `missingDays`, `ndvi`) |
 
@@ -205,7 +205,7 @@ All functions are pure (data in, numbers out). Thresholds are in `THRESHOLDS` at
 | Longest dry spell | Longest run of April–September days with under 1 mm of rain |
 | Extreme-rain days | Days with over 50 mm of rain |
 | Soil-wetness anomaly | 2021–2025 average root-zone wetness for a month minus the 2005–2025 average for that month |
-| Bare-field window | Months whose median NDVI is below 0.3 |
+| Bare-field window | Months whose median NDVI is below 0.3, or below half of the field's greenest month (whichever line is higher). The second rule exists because a 250 m pixel mixes the field with tree lines and grass, which keeps winter NDVI above 0.3. |
 
 ### 2.3 `js/scoring.js`
 

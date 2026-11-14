@@ -311,7 +311,7 @@ function buildExplanation(result, current, field, weights) {
   if (field.ind.ndvi.available) {
     const bare = field.ind.ndvi.byMonth.filter(m => m.bare).map(m => m.name);
     evidence.push(bare.length
-      ? `Satellite greenness (MODIS NDVI) shows this spot usually bare in ${bare.join(', ')}.`
+      ? `Satellite greenness (MODIS NDVI) shows low plant cover on this spot in ${bare.join(', ')}.`
       : 'Satellite greenness (MODIS NDVI) shows this spot is usually green all year.');
   }
 

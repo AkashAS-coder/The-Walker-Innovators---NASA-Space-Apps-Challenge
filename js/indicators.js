@@ -24,6 +24,10 @@ const THRESHOLDS = {
   // below the long-term average. Smaller gaps are treated as noise, not a signal.
   // Team starting point; not from a published source.
   DRY_SOIL_ANOMALY: -0.02,
+  // A 250 m MODIS pixel often mixes the field with tree lines and grass edges, which
+  // keeps winter NDVI above 0.3 even when the crop is gone. So a month also counts as
+  // "low cover" when its median NDVI is under half of the field's greenest month.
+  LOW_SHARE_OF_PEAK: 0.5,
   // The growing season used for rainfall and dry spells: April to September.
   SEASON_START_MONTH: 4,
   SEASON_END_MONTH: 9,
@@ -189,15 +193,18 @@ function parseNdvi(ndviJson) {
     });
 }
 
-// Median NDVI for each month, and which months are usually bare.
+// Median NDVI for each month, and which months usually have low or no plant cover:
+// below BARE_NDVI, or below LOW_SHARE_OF_PEAK times the greenest month's median.
 function ndviByMonth(points) {
   const months = [];
   for (let m = 1; m <= 12; m++) {
     const vals = points.filter(p => p.date.getMonth() + 1 === m).map(p => p.ndvi);
-    const med = median(vals);
-    months.push({ month: m, name: MONTH_NAMES[m - 1], median: med,
-                  bare: med !== null && med < THRESHOLDS.BARE_NDVI, count: vals.length });
+    months.push({ month: m, name: MONTH_NAMES[m - 1], median: median(vals), count: vals.length });
   }
+  const peak = Math.max(...months.map(m => m.median || 0));
+  const line = Math.max(THRESHOLDS.BARE_NDVI, peak * THRESHOLDS.LOW_SHARE_OF_PEAK);
+  for (const m of months) m.bare = m.median !== null && m.median < line;
+  months.line = line; // the cut-off actually used, shown on the chart
   return months;
 }
 
