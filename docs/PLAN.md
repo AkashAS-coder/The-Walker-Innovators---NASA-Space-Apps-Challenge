@@ -138,6 +138,59 @@ WaterWise (Best Use of Data, 2024) gave irrigated, mostly western farms a wateri
 
 **If we fall behind, cut in this order:** Level 3, then the second region, then CropScape (type the rotation in by hand instead). **Never cut** the three-card comparison, the five boxes, or POWER and NDVI.
 
+### Work split (two people, each with Claude Code)
+
+Right now two of us are building, each in our own Claude Code session. Each person owns separate files so the two sessions never edit the same file.
+
+**Person A: Data + Story**
+
+| Order | Task | Files A owns |
+| --- | --- | --- |
+| 1 | Pull NASA POWER for the demo field and save it | `src/fetch_power.py`, `data/raw/` |
+| 2 | Compute the five indicators | `src/indicators.py` |
+| 3 | Crop traits table, 8–10 crops, one source link per row | `data/crops.csv` |
+| 4 | List every dataset and library used | `SOURCES.md` |
+| 5 | Saturday evening: MODIS NDVI bare-field window | `src/fetch_ndvi.py` |
+| 6 | Sunday: slides, submission text, link testing | slides, `README.md` |
+
+**Person B: App + Scoring**
+
+| Order | Task | Files B owns |
+| --- | --- | --- |
+| 1 | Empty app live at a public link | `app.py` (or `index.html`) |
+| 2 | Layout: field picker, soil dropdown, five sliders, three rotation cards | `app.py` |
+| 3 | Candidate rotations, including the current one | `data/rotations.csv` |
+| 4 | Scoring: indicators and sliders in, scores and reasons out | `src/scoring.py`, `tests/` |
+| 5 | Connect A's real indicators, then run it end to end | `app.py` |
+| 6 | Saturday evening: map and charts. Sunday: bug fixes and deploy | `app.py` |
+
+**Shared files:** `CLAUDE.md`, `AI_USE.md`, `RESOURCES.md`. Change these only in small commits, and pull right before you edit them.
+
+**Agree first (5 minutes):** what `indicators.py` hands to `scoring.py`. Write the agreed keys at the top of `src/indicators.py`, for example:
+
+```python
+{
+  "frost_free_days":      {"value": ..., "trend": ..., "source": "NASA POWER T2M_MIN"},
+  "heat_stress_days":     {"value": ..., "trend": ..., "source": "NASA POWER T2M_MAX"},
+  "season_rain_mm":       {...},
+  "longest_dry_spell":    {...},
+  "soil_wetness_anomaly": {...},
+}
+```
+
+B may test scoring with made-up numbers inside `tests/` only. The app itself shows only A's real data.
+
+**How to work with two Claude Code sessions**
+
+1. Each person works in their own clone, on their own laptop.
+2. Start every session with: "Read CLAUDE.md and HANDOFF.md. I am Person A (data). Only edit my files." Use "Person B (app)" for the other one.
+3. Before every push: `git pull --rebase origin main`, then `git push origin main`.
+4. Make small commits and push at least every hour, so `main` always works.
+5. If you get a merge conflict, stop and fix it together. Don't let Claude guess.
+6. No commit credits Claude (see CLAUDE.md).
+
+**Meet-up points:** Sat 12:00 (A has indicators, B has layout) · Sat 1:30 (connect them: scoring on real indicators) · Sat 3:00 (end-to-end run, screenshot it) · Sun 10:00 (feature freeze) · Sun 2:00 (bug fixes only) · Sun 9:00 (submit).
+
 ### Slides (seven, no more)
 
 1. Title: project name, "The Walker Innovators", challenge name. No team member names and no NASA logo
