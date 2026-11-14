@@ -181,7 +181,8 @@ function renderReport() {
   $('report-intro').textContent = `Built from ${ind.lastYear - ind.firstYear + 1} years of daily NASA data ` +
     `(${ind.firstYear}–${ind.lastYear}). "Change" compares the average of ${recent} with ${early}.`;
 
-  const drySummer = ind.monthly.filter(m => [6, 7, 8].includes(m.month) && m.wetAnomaly < 0);
+  const drySummer = ind.monthly.filter(m => [6, 7, 8].includes(m.month) &&
+                                           m.wetAnomaly !== null && m.wetAnomaly < THRESHOLDS.DRY_SOIL_ANOMALY);
   const summerAnom = (ind.monthly.slice(5, 8).reduce((s, m) => s + (m.wetAnomaly || 0), 0) / 3) * 100;
 
   $('weather-cards').innerHTML = [

@@ -14,3 +14,4 @@
 - 2026-11-14, Claude Code, data/fields.json: picked the two demo fields by scanning CropScape for real crop pixels (Henry County, VA, and near Fallon, NV).
 - 2026-11-14, Claude Code, data/crops.csv, data/rotations.csv: drafted the crop-traits table (low/medium/high ratings with a source link per row, all marked verified=no for the team to check) and eight candidate rotations.
 - 2026-11-14, Claude Code, docs/API.md, README.md, SOURCES.md, tests/run.test.js: wrote the API documentation, README, sources list and tests.
+- 2026-11-14, Claude Code, js/scoring.js, js/indicators.js, js/app.js, tests/run.test.js: reviewed the app against the judging criteria; fixed alfalfa hay counting as zero harvests, and made the dry-soil rule use one named threshold (DRY_SOIL_ANOMALY) so tiny dips are not treated as drying. Added two tests.

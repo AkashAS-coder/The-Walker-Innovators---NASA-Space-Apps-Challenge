@@ -48,3 +48,27 @@ test('scores on saved Henry County data are between 0 and 100', () => {
     }
   }
 });
+
+// A made-up field with flat weather, used to test single rules.
+function fakeField(juneAnomaly) {
+  const monthly = ind.MONTH_NAMES.map((name, i) => ({ month: i + 1, name, heatDaysPerYear: 0,
+    extremeRainPerYear: 0, wetAnomaly: i + 1 === 6 ? juneAnomaly : 0 }));
+  return { id: 'test', irrigated: false, texture: 'Loam', soil: null,
+           ind: { monthly, heat: { recent: 0 }, medianLastSpringFrost: null, medianFirstFallFrost: null,
+                  ndvi: { available: false } } };
+}
+const even = { water: 1, soil: 1, income: 1, forage: 1, erosion: 1 };
+
+test('alfalfa hay counts toward income', () => {
+  const r = sc.scoreRotation(rotations.find(x => x.id === 'alfalfa_grain'), fakeField(0), even);
+  assert.ok(r.sub.income.score > 30, `income was ${r.sub.income.score}`);
+});
+
+test('a tiny soil-moisture dip is noise, a clear one costs thirsty crops points', () => {
+  const corn = rotations.find(x => x.id === 'corn_soy');
+  const flat = sc.scoreRotation(corn, fakeField(0), even).sub.water.score;
+  const tiny = sc.scoreRotation(corn, fakeField(-0.009), even).sub.water.score;
+  const clear = sc.scoreRotation(corn, fakeField(-0.035), even).sub.water.score;
+  assert.strictEqual(tiny, flat);
+  assert.ok(clear < flat);
+});

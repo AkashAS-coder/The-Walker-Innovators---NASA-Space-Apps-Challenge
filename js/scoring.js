@@ -136,7 +136,7 @@ function scoreWater(rotation, field) {
   let score = (3 - avgNeed) / 2 * 100;
   const reasons = [`Main crops have ${LEVEL_WORD[Math.round(avgNeed)]} average water need (crop table).`];
   const drySummer = field.ind.monthly.filter(m => [6, 7, 8].includes(m.month) &&
-                                                  m.wetAnomaly !== null && m.wetAnomaly < 0);
+                                                  m.wetAnomaly !== null && m.wetAnomaly < THRESHOLDS.DRY_SOIL_ANOMALY);
   const highShare = mains.filter(c => c.water === 3).length / mains.length;
   if (!field.irrigated && drySummer.length && highShare > 0) {
     const penalty = highShare * RULES.WATER_DRY_MONTH_PENALTY * drySummer.length;
@@ -206,10 +206,12 @@ function frostRisks(rotation, field) {
 function scoreIncome(rotation, field) {
   let harvests = 0;
   for (const y of rotation.years) {
-    for (const c of [y.main, y.winter]) {
+    // A perennial like alfalfa fills both slots of a year, so count it only once.
+    const slots = y.winter === y.main ? [y.main] : [y.main, y.winter];
+    for (const c of slots) {
       if (!c) continue;
       if (c.role === 'cash') harvests += 1;
-      if (c.role === 'forage' && c !== y.winter) harvests += RULES.FORAGE_HARVEST_VALUE;
+      if (c.role === 'forage' && c === y.main) harvests += RULES.FORAGE_HARVEST_VALUE;
     }
   }
   const perYear = harvests / rotation.years.length;
@@ -282,7 +284,7 @@ function vulnerableMonths(result, field) {
     const flags = [];
     const growing = result.cover[i] > 0;
     if (growing && m.heatDaysPerYear >= 3) flags.push('heat');
-    if (growing && m.wetAnomaly !== null && m.wetAnomaly < -0.02) flags.push('dry soil');
+    if (growing && m.wetAnomaly !== null && m.wetAnomaly < THRESHOLDS.DRY_SOIL_ANOMALY) flags.push('dry soil');
     if (result.cover[i] < 1 && m.extremeRainPerYear > 0.05) flags.push('bare in heavy rain');
     if (result.cover[i] < 1 && field.ind.ndvi.available && field.ind.ndvi.byMonth[i].bare) flags.push('bare (satellite)');
     return { month: m.name, flags };
@@ -373,7 +375,7 @@ function compareRotations(rotations, currentId, field, weights, constraints = {}
 
 // In the browser dayToDateLabel comes from indicators.js; in Node we load it.
 if (typeof module !== 'undefined') {
-  ({ dayToDateLabel } = require('./indicators.js'));
+  ({ dayToDateLabel, THRESHOLDS } = require('./indicators.js'));
   module.exports = { LEVEL, PRIORITIES, RULES, SOIL_TEXTURES, parseCsv, parseCrops, parseRotations, inWindow,
     coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths };
 }

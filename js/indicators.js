@@ -19,6 +19,11 @@ const THRESHOLDS = {
   // usually about 0.1-0.2 and green crops 0.6+ (NASA Earth Observatory,
   // "Measuring Vegetation"). 0.3 leaves room for thin stubble.
   BARE_NDVI: 0.3,
+  // Root-zone wetness (GWETROOT) runs from 0 (dry) to 1 (soaked). A month counts as
+  // "drier than normal" only if recent years are at least 0.02 (2 points out of 100)
+  // below the long-term average. Smaller gaps are treated as noise, not a signal.
+  // Team starting point; not from a published source.
+  DRY_SOIL_ANOMALY: -0.02,
   // The growing season used for rainfall and dry spells: April to September.
   SEASON_START_MONTH: 4,
   SEASON_END_MONTH: 9,
