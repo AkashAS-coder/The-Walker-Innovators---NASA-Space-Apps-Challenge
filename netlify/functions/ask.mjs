@@ -19,7 +19,8 @@ const MODELS = [
 const MAX_QUESTION = 300;      // characters
 const MAX_RESULTS = 20000;     // characters of page text
 const MAX_HISTORY = 8;         // earlier messages kept in the conversation
-const MAX_ANSWER_TOKENS = 400;
+// Room for the answer plus any hidden "thinking" some models do first; too little gives empty answers.
+const MAX_ANSWER_TOKENS = 1500;
 
 // What the helper is told before every conversation. It keeps the helper inside our rules.
 const HELPER_RULES = `You help a farmer read the results of the Field Shift Rotation Explorer, a rule-based tool
@@ -82,6 +83,8 @@ export default async req => {
         models,
         max_tokens: MAX_ANSWER_TOKENS,
         temperature: 0.3,
+        // Models that "think" first: keep it short and don't send the thinking back.
+        reasoning: { effort: 'low', exclude: true },
         messages: [
           { role: 'system', content: `${HELPER_RULES}\n\nRESULTS:\n${results}` },
           ...history,
@@ -96,8 +99,14 @@ export default async req => {
       const detail = String(data.error?.message || '').slice(0, 300);
       return reply(res.status === 429 ? 429 : 502, { error: res.status === 429 ? 'busy' : 'ai-error', status: res.status, detail });
     }
-    const answer = data.choices?.[0]?.message?.content?.trim();
-    if (!answer) return reply(502, { error: 'ai-error', detail: 'The model sent an empty answer.' });
+    const choice = data.choices?.[0] || {};
+    // Most models send a string; a few send a list of text parts.
+    const content = choice.message?.content;
+    const answer = (Array.isArray(content) ? content.map(p => p.text || '').join('') : String(content || '')).trim();
+    if (!answer) {
+      return reply(502, { error: 'ai-error',
+        detail: `The model sent an empty answer (model: ${data.model}, finish: ${choice.finish_reason}).` });
+    }
     return reply(200, { answer, model: data.model });
   } catch (err) {
     console.error('OpenRouter request failed', err);
