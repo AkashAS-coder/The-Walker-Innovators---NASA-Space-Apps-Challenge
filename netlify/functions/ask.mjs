@@ -92,10 +92,12 @@ export default async req => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       console.error('OpenRouter error', res.status, JSON.stringify(data).slice(0, 500));
-      return reply(res.status === 429 ? 429 : 502, { error: res.status === 429 ? 'busy' : 'ai-error' });
+      // OpenRouter's own error message (never the key), so problems can be fixed from the browser.
+      const detail = String(data.error?.message || '').slice(0, 300);
+      return reply(res.status === 429 ? 429 : 502, { error: res.status === 429 ? 'busy' : 'ai-error', status: res.status, detail });
     }
     const answer = data.choices?.[0]?.message?.content?.trim();
-    if (!answer) return reply(502, { error: 'ai-error' });
+    if (!answer) return reply(502, { error: 'ai-error', detail: 'The model sent an empty answer.' });
     return reply(200, { answer, model: data.model });
   } catch (err) {
     console.error('OpenRouter request failed', err);
