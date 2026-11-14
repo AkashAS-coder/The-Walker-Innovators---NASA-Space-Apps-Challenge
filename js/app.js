@@ -316,7 +316,9 @@ function renderOptions() {
   const results = compareRotations(state.rotations, $('rotation-select').value, field, weights(),
                                    { noHay: $('no-hay').checked });
   state.results = results; // kept so "Save to My farm" saves exactly what is on screen
-  state.ask = null;         // results changed, so the AI helper starts a fresh chat next time
+  // Results changed, so the AI helper starts a fresh chat with the new numbers next time.
+  if (state.ask) addChatNote('Your results changed. The helper will use the new numbers from here on.');
+  state.ask = null;
   renderHelperContext();
   const best = Math.max(...results.slice(1).map(r => r.total));
 
@@ -633,47 +635,107 @@ function resultsForHelper() {
   ].join('\n\n');
 }
 
-// Tells the farmer which field and rotation the helper is answering about.
+// Fills the "Answering about" card: which field, rotation and scores the helper sees.
 function renderHelperContext() {
   if (!state.results || !state.field) { $('helper-context').textContent = 'Loading your field…'; return; }
-  $('helper-context').innerHTML = `Answering about <strong>${esc(state.field.name)}</strong>, growing ` +
-    `<strong>${esc(state.results[0].rotation.name)}</strong>, with your current sliders. ` +
-    `<a href="#compare">Change these on the Compare page</a>.`;
+  const [current, ...alts] = state.results;
+  const top = alts.slice().sort((x, y) => y.total - x.total)[0];
+  $('helper-context').innerHTML = `
+    <strong>${esc(state.field.name)}</strong>
+    <span class="place">${esc(state.field.place)}</span>
+    <dl>
+      <div><dt>You grow</dt><dd>${esc(current.rotation.name)} · ${current.total}/100</dd></div>
+      ${top ? `<div><dt>Top alternative</dt><dd>${esc(top.rotation.name)} · ${top.total}/100</dd></div>` : ''}
+      <div><dt>Soil warning signs on</dt><dd>${current.warnings.filter(w => w.lit).length} of ${current.warnings.length}</dd></div>
+    </dl>`;
 }
 
+const LEAF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>';
+
+// Adds one chat bubble and returns the element that holds its text.
+// who: 'you', 'bot' or 'err'. Text goes in with textContent, never innerHTML,
+// so an AI answer can't inject code into the page.
 function addMessage(who, words) {
-  const p = document.createElement('p');
-  p.className = `msg ${who}`;
-  p.textContent = words; // textContent, never innerHTML, so an answer can't inject code
-  $('helper-log').appendChild(p);
-  return p;
+  $('helper-empty').hidden = true;
+  const row = document.createElement('div');
+  row.className = `row ${who}`;
+  if (who !== 'you') row.innerHTML = `<span class="chat-avatar">${LEAF_SVG}</span>`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  if (who === 'bot') bubble.innerHTML = '<span class="who">AI answer</span>';
+  const text = document.createElement('span');
+  if (words === null) text.innerHTML = '<span class="typing" aria-label="Thinking"><span></span><span></span><span></span></span>';
+  else text.textContent = words;
+  bubble.appendChild(text);
+  row.appendChild(bubble);
+  $('helper-log').appendChild(row);
+  $('helper-log').scrollTop = $('helper-log').scrollHeight;
+  return text;
 }
 
-$('helper-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const question = $('helper-input').value.trim();
-  if (!question) return;
+// A small centered line in the chat, e.g. when the results change.
+function addChatNote(words) {
+  const p = document.createElement('p');
+  p.className = 'chat-note';
+  p.textContent = words;
+  $('helper-log').appendChild(p);
+}
+
+function clearChat() {
+  $('helper-log').querySelectorAll('.row, .chat-note').forEach(el => el.remove());
+  $('helper-empty').hidden = false;
+  $('helper-log').scrollTop = 0;
+  state.ask = null;
+}
+
+async function askHelper(question) {
   const c = window.cloud || {};
   addMessage('you', question);
-  $('helper-input').value = '';
   if (!c.ready) {
-    addMessage('err', 'The AI helper is not set up on this copy of the site yet. Every score and explanation above still works without it.');
+    addMessage('err', 'The AI helper is not set up on this copy of the site yet. Every score and explanation in the tool still works without it.');
     return;
   }
-  if (!state.results) { addMessage('err', 'The results are still loading. Try again in a moment.'); return; }
-  const waiting = addMessage('bot', 'Thinking…');
+  if (!state.results) { addMessage('err', 'Your results are still loading. Try again in a moment.'); return; }
+  const answer = addMessage('bot', null);
   $('helper-send').disabled = true;
   try {
     if (!state.ask) state.ask = c.newChat(resultsForHelper());
-    waiting.textContent = await state.ask(question);
+    answer.textContent = await state.ask(question);
   } catch (err) {
     console.error(err);
-    waiting.className = 'msg err';
-    waiting.textContent = 'The helper could not answer right now (the AI service may be busy). The results above are unchanged.';
+    const row = answer.closest('.row');
+    row.className = 'row err';
+    row.querySelector('.who')?.remove();
+    answer.textContent = 'The helper could not answer right now (the AI service may be busy). Your results are unchanged.';
   } finally {
     $('helper-send').disabled = false;
+    $('helper-log').scrollTop = $('helper-log').scrollHeight;
   }
+}
+
+// The text box grows with what you type, up to a few lines.
+function fitInput() {
+  const box = $('helper-input');
+  box.style.height = 'auto';
+  box.style.height = `${box.scrollHeight}px`;
+}
+
+$('helper-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const question = $('helper-input').value.trim();
+  if (!question || $('helper-send').disabled) return;
+  $('helper-input').value = '';
+  fitInput();
+  askHelper(question);
 });
+$('helper-input').addEventListener('input', fitInput);
+$('helper-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('helper-form').requestSubmit(); }
+});
+$('helper-chips').addEventListener('click', e => {
+  if (e.target.classList.contains('chip')) askHelper(e.target.textContent);
+});
+$('helper-new').addEventListener('click', clearChat);
 
 $('nav-toggle').addEventListener('click', () => {
   const open = $('nav-links').classList.toggle('open');
