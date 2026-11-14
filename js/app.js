@@ -665,7 +665,9 @@ function addMessage(who, words) {
   if (who !== 'you') row.innerHTML = `<span class="chat-avatar">${LEAF_SVG}</span>`;
   const bubble = document.createElement('div');
   bubble.className = 'bubble';
-  if (who === 'bot') bubble.innerHTML = '<span class="who">AI answer</span>';
+  // The bot's name heads every answer, and while it thinks: "Field Helper Buddy is thinking" + dots.
+  // The chat header and the note under the chat still say these are AI answers.
+  if (who === 'bot') bubble.innerHTML = `<span class="who">${words === null ? 'Field Helper Buddy is thinking' : 'Field Helper Buddy'}</span>`;
   const text = document.createElement('span');
   if (words === null) text.innerHTML = '<span class="typing" aria-label="Thinking"><span></span><span></span><span></span></span>';
   else text.textContent = words;
@@ -699,6 +701,9 @@ const HELPER_ERRORS = {
   other: 'The helper could not answer right now. Try again in a moment. Your results are unchanged.',
 };
 
+// Some models add markdown (**bold**, # headings) even when told not to; show plain text instead.
+const plainText = s => s.replace(/\*\*(.+?)\*\*/g, '$1').replace(/^#{1,6}\s+/gm, '').replace(/^\s*[*-]\s+/gm, '• ');
+
 async function askHelper(question) {
   addMessage('you', question);
   if (!state.results) { addMessage('err', 'Your results are still loading. Try again in a moment.'); return; }
@@ -715,7 +720,8 @@ async function askHelper(question) {
       const kind = !data ? 'no-server' : data.error === 'not-set-up' ? 'not-set-up' : data.error === 'busy' ? 'busy' : 'other';
       throw Object.assign(new Error(kind), { kind });
     }
-    answer.textContent = data.answer;
+    answer.textContent = plainText(data.answer);
+    answer.closest('.row').querySelector('.who').textContent = 'Field Helper Buddy';
     state.chat.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
   } catch (err) {
     console.error('AI helper', err);
