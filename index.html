@@ -3,18 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Field Shift Rotation Explorer</title>
-  <meta name="description" content="Compare three crop rotations for your field using 20 years of NASA Earth data. Built by The Walker Innovators for the NASA Space Apps Challenge 2026.">
+  <title>Field Shift: Soil Health Check</title>
+  <meta name="description" content="Is your field's soil wearing out? Check four soil warning signs from 20 years of NASA Earth data, then compare crop cycles that could fix them. Built by The Walker Innovators for the NASA Space Apps Challenge 2026.">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%228%22 fill=%22%232f6b3a%22/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="top">
     <div class="wrap">
-      <h1>Field Shift Rotation Explorer</h1>
-      <p class="lead">See how your field's weather and soil are changing, then compare three crop rotations side by side, including the one you grow now. Every option shows its evidence and what we still don't know.</p>
-      <p class="mission">Compare rotations · reveal trade-offs · understand risk · make uncertainty visible</p>
-      <p class="honest-header">Rule-based, no black box · every number names its data source · every option lists what we don't know</p>
+      <p class="eyebrow">Field Shift · Soil Health Check</p>
+      <h1>Is your field's soil wearing out?</h1>
+      <p class="lead">We read 20 years of NASA satellite and weather data for your field, look for four warning signs that soil is wearing down, and compare crop cycles that could fix them. Every number shows where it came from and what we still don't know.</p>
+      <nav class="steps-bar" aria-label="Steps">
+        <a href="#step-check"><span class="num">1</span> Check your soil</a>
+        <a href="#step-cycle"><span class="num">2</span> See the cycle</a>
+        <a href="#step-compare"><span class="num">3</span> Compare fixes</a>
+      </nav>
     </div>
   </header>
 
@@ -23,137 +28,167 @@
   </div>
 
   <main class="wrap">
-    <p id="finding" class="finding" aria-live="polite"></p>
     <p id="loading" class="loading">Loading saved NASA data…</p>
     <p id="load-error" class="error" hidden></p>
 
-    <!-- Step 1 -->
-    <section id="step-field" class="step">
-      <h2><span class="num">1</span> Pick your field</h2>
+    <!-- Step 1: the soil health check -->
+    <section id="step-check" class="step hero-step">
+      <h2><span class="num">1</span> Check your soil</h2>
       <div class="two-col">
-        <div>
-          <label for="field-select">Field</label>
+        <div class="field-form">
+          <label for="field-select">Your field</label>
           <select id="field-select"></select>
-          <p id="field-place" class="muted"></p>
-          <p id="field-note" class="small muted"></p>
-          <p class="small muted">Tip: click a pin on the map. Only fields with saved NASA data can be picked. To add a field, see the README.</p>
-        </div>
-        <div id="map" class="map" aria-label="Map of available fields"></div>
-      </div>
-    </section>
+          <p id="field-place" class="small muted"></p>
 
-    <!-- Step 2 -->
-    <section id="step-farm" class="step">
-      <h2><span class="num">2</span> Tell us about your farm</h2>
-      <div class="form-grid">
-        <div>
           <label for="rotation-select">What you grow now</label>
           <select id="rotation-select"></select>
-          <p class="small muted">Pick the closest match. The strip below shows what satellites recorded on this field.</p>
+          <p class="small muted">Pick the closest match. The years below show what satellites recorded on this field.</p>
+
+          <div class="checks">
+            <label><input type="checkbox" id="irrigated"> My field is irrigated</label>
+          </div>
         </div>
-        <div>
-          <label for="texture-select">Soil texture</label>
-          <select id="texture-select"></select>
-          <p class="small muted" id="texture-hint"></p>
-        </div>
-        <div class="checks">
-          <label><input type="checkbox" id="irrigated"> My field is irrigated</label>
-          <label><input type="checkbox" id="no-hay"> I don't have hay or forage equipment</label>
-          <label><input type="checkbox" id="sells-forage"> I can sell hay or feed it to my own livestock</label>
-        </div>
+        <div id="map" class="map" aria-label="Map of available fields. Click a pin to pick a field."></div>
       </div>
-      <h3>What you've grown <span class="tag tag-usda">USDA CropScape</span></h3>
-      <div id="history" class="history"></div>
-      <p class="small muted">From the USDA Cropland Data Layer, a yearly crop map made from satellite images at 30 m. It can be wrong for a single spot, so correct the rotation above if needed.</p>
+
+      <div class="history-row">
+        <p class="small"><strong>What you've grown</strong> <span class="tag tag-usda">USDA CropScape</span></p>
+        <div id="history" class="history"></div>
+      </div>
+
+      <div class="headline" id="headline" aria-live="polite"></div>
+      <div id="soil-check" class="signs"></div>
+      <p class="small muted">The first three signs follow published soil health advice from USDA NRCS, SARE and Virginia Cooperative Extension: keep the soil covered, keep living roots in the ground, add legumes. The fourth, thirsty crops in drying months, is our own check built on NASA soil-wetness data. See "Why we believe this" below.</p>
     </section>
 
-    <!-- Step 3 -->
-    <section id="step-report" class="step">
-      <h2><span class="num">3</span> Your field today</h2>
-      <p class="muted" id="report-intro"></p>
-
-      <h3>Weather and water <span class="tag">NASA POWER</span></h3>
-      <div id="weather-cards" class="cards"></div>
-
-      <h3>Soil <span class="tag tag-usda">USDA soil survey</span></h3>
-      <div id="soil-card" class="cards"></div>
-
-      <div class="chart-grid">
-        <figure class="chart-box">
-          <figcaption>How your summers and seasons changed, year by year <span class="tag">NASA POWER</span></figcaption>
-          <canvas id="trend-chart" height="220"></canvas>
-          <div class="chart-toggle" id="trend-toggle"></div>
-        </figure>
-        <figure class="chart-box">
-          <figcaption>When the field is green or bare (median greenness by month) <span class="tag tag-modis">MODIS NDVI</span></figcaption>
-          <canvas id="ndvi-chart" height="220"></canvas>
-          <p class="small muted" id="ndvi-note"></p>
-        </figure>
-      </div>
-
-      <h3>Risky months for what you grow now</h3>
-      <p class="small muted">Each box is a month. Green means a crop is growing in every year of your rotation. Warnings show when crops look vulnerable or the ground is bare during heavy rain.</p>
+    <!-- Step 2: the cycle, month by month -->
+    <section id="step-cycle" class="step">
+      <h2><span class="num">2</span> See the cycle that's wearing it down</h2>
+      <p class="muted">Each box is a month of what you grow now. Green means a crop is growing in every year of your rotation; tan means the ground is bare in some years. Warnings mark bare ground in heavy-rain months and crops at risk.</p>
       <div id="risk-strip" class="month-strip"></div>
+      <figure class="chart-box">
+        <figcaption>What satellites saw: how green your field is, month by month <span class="tag tag-modis">MODIS NDVI</span></figcaption>
+        <canvas id="ndvi-chart" height="110"></canvas>
+        <p class="small muted" id="ndvi-note"></p>
+      </figure>
     </section>
 
-    <!-- Step 4 -->
-    <section id="step-priorities" class="step">
-      <h2><span class="num">4</span> What matters to you</h2>
-      <p class="muted">Move the sliders. The options below re-rank right away.</p>
-      <div id="sliders" class="sliders"></div>
-    </section>
-
-    <!-- Step 5 -->
+    <!-- Step 3: priorities and the three options -->
     <section id="step-compare" class="step">
-      <h2><span class="num">5</span> Three options side by side</h2>
-      <p class="muted">Your current rotation plus the two alternatives that best fit your field and your priorities. Scores run from 0 to 100 and come from the rules listed in the "How scoring works" section.</p>
+      <h2><span class="num">3</span> Compare three cycles that could fix it</h2>
+      <p id="finding" class="finding" aria-live="polite"></p>
+
+      <div class="priorities">
+        <h3>What matters to you</h3>
+        <p class="small muted">Move the sliders. The options re-rank right away.</p>
+        <div id="sliders" class="sliders"></div>
+        <details class="more-inputs">
+          <summary>More about your farm (soil texture, hay)</summary>
+          <div class="form-grid">
+            <div>
+              <label for="texture-select">Soil texture</label>
+              <select id="texture-select"></select>
+              <p class="small muted" id="texture-hint"></p>
+            </div>
+            <div class="checks">
+              <label><input type="checkbox" id="no-hay"> I don't have hay or forage equipment</label>
+              <label><input type="checkbox" id="sells-forage"> I can sell hay or feed it to my own livestock</label>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <p class="small muted">Your current rotation plus the two alternatives that best fit your field and your priorities. Fit scores run from 0 to 100 and come from the rules in "How scoring works".</p>
       <div id="options" class="options"></div>
     </section>
 
-    <!-- Glossary -->
-    <section id="glossary" class="step">
-      <h2>Words we use</h2>
-      <dl class="glossary">
-        <dt>NDVI (greenness)</dt><dd>A satellite measure of how green and leafy the ground is, from about 0 (bare soil) to 1 (thick green crop).</dd>
-        <dt>Evapotranspiration</dt><dd>Water that leaves a field as vapor, from the soil drying and from plants "breathing out" through their leaves.</dd>
-        <dt>Soil-moisture anomaly</dt><dd>How much wetter or drier the soil is than usual for that month. Negative means drier than normal.</dd>
-        <dt>Frost risk</dt><dd>The chance of a night at or below freezing (0 °C, 32 °F) while a frost-sensitive crop is in the ground.</dd>
-        <dt>Frost-free season</dt><dd>The number of days between the last spring frost and the first fall frost.</dd>
-        <dt>Water balance</dt><dd>Rain that falls minus the water crops use. When it goes negative, the soil dries out.</dd>
-        <dt>Bare-field window</dt><dd>Weeks when nothing is growing, so soil can wash or blow away and no roots feed the soil.</dd>
-        <dt>Satellite vs ground data</dt><dd>Satellites see the whole field from above, often at coarse resolution. A rain gauge is exact, but only for one spot. Using both gives a better picture.</dd>
-        <dt>Nitrogen-fixing crop</dt><dd>Legumes like soybean, clover and alfalfa host bacteria on their roots that pull nitrogen from the air into the soil, which can cut fertilizer needs.</dd>
-        <dt>Cover crop</dt><dd>A crop grown to protect and feed the soil, not to sell. It keeps roots in the ground between cash crops.</dd>
-        <dt>Deep-rooting crop</dt><dd>Crops like sorghum, alfalfa and radish push roots deep, which breaks up packed soil and helps rain soak in.</dd>
-        <dt>Drought-tolerant crop</dt><dd>A crop such as sorghum that keeps growing through dry spells better than thirstier crops such as corn.</dd>
-      </dl>
-    </section>
+    <!-- Research and details -->
+    <section id="research" class="step">
+      <h2>Why we believe this</h2>
+      <p>Soil can't be measured from space directly. So we look for the conditions that wear soil down and show which crop cycles reduce them. Each warning sign comes from a published soil health principle:</p>
+      <div class="principles">
+        <div class="principle">
+          <h3>Soil washing away</h3>
+          <p>Bare soil hit by heavy rain loses topsoil; plant cover and roots hold it in place. Basis: USDA NRCS soil health practice "maximize cover".</p>
+          <p class="small muted">Our data: NASA POWER days with over 2 in (50 mm) of rain, MODIS greenness, USDA soil slope.</p>
+        </div>
+        <div class="principle">
+          <h3>Soil losing organic matter</h3>
+          <p>Living roots feed soil life and add organic matter; long bare periods starve it. Basis: USDA NRCS "support living roots" and SARE <em>Managing Cover Crops Profitably</em>.</p>
+          <p class="small muted">Our data: crop calendar for each rotation, MODIS greenness.</p>
+        </div>
+        <div class="principle">
+          <h3>Nitrogen running down</h3>
+          <p>Legumes such as soybean, clover and alfalfa host bacteria that pull nitrogen from the air into the soil. Basis: VCE Agronomy Handbook and SARE.</p>
+          <p class="small muted">Our data: crop table (nitrogen-fixing column).</p>
+        </div>
+        <div class="principle">
+          <h3>Thirsty crops in drying months</h3>
+          <p>A high-water crop grown in months when root-zone soil runs drier than usual stresses the crop and the soil. Basis: our crop table. Most water-need ratings there are our own reading of VCE and SARE, not stated by them; VCE does say sorghum handles drought better than corn (see docs/CROP_CHECK.md).</p>
+          <p class="small muted">Our data: NASA POWER root-zone soil wetness (GWETROOT), crop table.</p>
+        </div>
+      </div>
 
-    <!-- How it works -->
-    <section id="how" class="step">
-      <h2>How scoring works</h2>
-      <p>No black box. Each option gets five sub-scores from simple rules. Your sliders decide how much each counts.</p>
-      <ul class="rules">
-        <li><strong>Save water:</strong> starts from the main crops' water need in our crop table. On a rain-fed field, thirsty crops lose points for every summer month where NASA POWER shows root-zone soil drier than normal in 2021–2025, and on sandy soil.</li>
-        <li><strong>Build soil health:</strong> points for living roots every winter, a nitrogen-fixing crop, a deep-rooted crop, and more plant families.</li>
-        <li><strong>Extra income:</strong> harvests per year (not dollars, since we have no local prices; hay counts as half a harvest unless you say you can sell or feed it), minus points for heat-sensitive crops when recent summers are hot and for crops whose window crosses your usual frost dates.</li>
-        <li><strong>Forage:</strong> the forage value of the crops in our table.</li>
-        <li><strong>Reduce erosion:</strong> how much of the year the ground is covered, with extra weight on the months when NASA POWER shows heavy rain (over 2 in / 50 mm in a day) has fallen.</li>
-      </ul>
-      <p class="small">The scoring code is in <code>js/scoring.js</code> and the thresholds are in <code>js/indicators.js</code>. The API docs are in <a href="docs/API.md">docs/API.md</a>.</p>
-    </section>
+      <details class="panel">
+        <summary>Weather details for your field <span class="tag">NASA POWER</span></summary>
+        <p class="muted" id="report-intro"></p>
+        <div id="weather-cards" class="cards"></div>
+        <figure class="chart-box">
+          <figcaption>How your summers and seasons changed, year by year <span class="tag">NASA POWER</span></figcaption>
+          <canvas id="trend-chart" height="110"></canvas>
+          <div class="chart-toggle" id="trend-toggle"></div>
+        </figure>
+      </details>
 
-    <!-- Sources -->
-    <section id="sources" class="step">
-      <h2>Data we used</h2>
-      <ul class="sources">
-        <li><strong>NASA POWER</strong> (daily temperature, rain, soil wetness, 2005–2025): <a href="https://power.larc.nasa.gov/">power.larc.nasa.gov</a></li>
-        <li><strong>MODIS MOD13Q1 NDVI</strong> (250 m greenness every 16 days) via the ORNL DAAC subset service: <a href="https://modis.ornl.gov/rst/api/v1/">modis.ornl.gov</a></li>
-        <li><strong>USDA NRCS soil survey (SSURGO)</strong> via Soil Data Access: <a href="https://sdmdataaccess.sc.egov.usda.gov/">sdmdataaccess.sc.egov.usda.gov</a></li>
-        <li><strong>USDA NASS Cropland Data Layer (CropScape)</strong> for each field's crop history, 2016–2025: <a href="https://nassgeodata.gmu.edu/CropScape/">nassgeodata.gmu.edu/CropScape</a></li>
-        <li><strong>Crop traits</strong>: Virginia Cooperative Extension Agronomy Handbook and SARE <em>Managing Cover Crops Profitably</em>. Each row links to its source in <a href="data/crops.csv">data/crops.csv</a>.</li>
-      </ul>
-      <p class="small muted">Full list with licenses in SOURCES.md.</p>
+      <details class="panel">
+        <summary>Your soil survey <span class="tag tag-usda">USDA soil survey</span></summary>
+        <div id="soil-card" class="cards"></div>
+        <p id="field-note" class="small muted"></p>
+      </details>
+
+      <details class="panel">
+        <summary>Words we use</summary>
+        <dl class="glossary">
+          <dt>NDVI (greenness)</dt><dd>A satellite measure of how green and leafy the ground is, from about 0 (bare soil) to 1 (thick green crop).</dd>
+          <dt>Evapotranspiration</dt><dd>Water that leaves a field as vapor, from the soil drying and from plants "breathing out" through their leaves.</dd>
+          <dt>Soil-moisture anomaly</dt><dd>How much wetter or drier the soil is than usual for that month. Negative means drier than normal.</dd>
+          <dt>Frost risk</dt><dd>The chance of a night at or below freezing (0 °C, 32 °F) while a frost-sensitive crop is in the ground.</dd>
+          <dt>Frost-free season</dt><dd>The number of days between the last spring frost and the first fall frost.</dd>
+          <dt>Organic matter</dt><dd>The dark, crumbly part of soil made from old roots and plants. It holds water and feeds crops.</dd>
+          <dt>Bare-field window</dt><dd>Weeks when nothing is growing, so soil can wash or blow away and no roots feed the soil.</dd>
+          <dt>Satellite vs ground data</dt><dd>Satellites see the whole field from above, often at coarse resolution. A rain gauge is exact, but only for one spot. Using both gives a better picture.</dd>
+          <dt>Nitrogen-fixing crop</dt><dd>Legumes like soybean, clover and alfalfa host bacteria on their roots that pull nitrogen from the air into the soil, which can cut fertilizer needs.</dd>
+          <dt>Cover crop</dt><dd>A crop grown to protect and feed the soil, not to sell. It keeps roots in the ground between cash crops.</dd>
+          <dt>Deep-rooting crop</dt><dd>Crops like sorghum, alfalfa and radish push roots deep, which breaks up packed soil and helps rain soak in.</dd>
+          <dt>Drought-tolerant crop</dt><dd>A crop such as sorghum that keeps growing through dry spells better than thirstier crops such as corn.</dd>
+        </dl>
+      </details>
+
+      <details class="panel" id="how">
+        <summary>How scoring works</summary>
+        <p>No black box. Each option gets five sub-scores from simple rules. Your sliders decide how much each counts. The four warning signs are separate yes-or-no checks, described above.</p>
+        <ul class="rules">
+          <li><strong>Save water:</strong> starts from the main crops' water need in our crop table. On a rain-fed field, thirsty crops lose points for every summer month where NASA POWER shows root-zone soil drier than normal in 2021–2025, and on sandy soil.</li>
+          <li><strong>Build soil health:</strong> points for living roots every winter, a nitrogen-fixing crop, a deep-rooted crop, and more plant families.</li>
+          <li><strong>Extra income:</strong> harvests per year (not dollars, since we have no local prices; hay counts as half a harvest unless you say you can sell or feed it), minus points for heat-sensitive crops when recent summers are hot and for crops whose window crosses your usual frost dates.</li>
+          <li><strong>Forage:</strong> the forage value of the crops in our table.</li>
+          <li><strong>Reduce erosion:</strong> how much of the year the ground is covered, with extra weight on the months when NASA POWER shows heavy rain (over 2 in / 50 mm in a day) has fallen.</li>
+        </ul>
+        <p class="small">The scoring code is in <code>js/scoring.js</code> and the thresholds are in <code>js/indicators.js</code>. The API docs are in <a href="docs/API.md">docs/API.md</a>.</p>
+      </details>
+
+      <details class="panel" id="sources">
+        <summary>Data and sources we used</summary>
+        <ul class="sources">
+          <li><strong>NASA POWER</strong> (daily temperature, rain, soil wetness, 2005–2025): <a href="https://power.larc.nasa.gov/">power.larc.nasa.gov</a></li>
+          <li><strong>MODIS MOD13Q1 NDVI</strong> (250 m greenness every 16 days) via the ORNL DAAC subset service: <a href="https://modis.ornl.gov/rst/api/v1/">modis.ornl.gov</a></li>
+          <li><strong>USDA NRCS soil survey (SSURGO)</strong> via Soil Data Access: <a href="https://sdmdataaccess.sc.egov.usda.gov/">sdmdataaccess.sc.egov.usda.gov</a></li>
+          <li><strong>USDA NASS Cropland Data Layer (CropScape)</strong> for each field's crop history, 2016–2025: <a href="https://nassgeodata.gmu.edu/CropScape/">nassgeodata.gmu.edu/CropScape</a></li>
+          <li><strong>USDA NRCS soil health principles</strong> ("reduce disturbance, maximize cover, promote biodiversity, and support living roots"): <a href="https://www.nrcs.usda.gov/conservation-basics/soil/soil-health">nrcs.usda.gov soil health</a></li>
+          <li><strong>Crop traits</strong>: Virginia Cooperative Extension Agronomy Handbook and SARE <em>Managing Cover Crops Profitably</em>. Each row links to its source in <a href="data/crops.csv">data/crops.csv</a>.</li>
+        </ul>
+        <p class="small muted">Full list with licenses in SOURCES.md.</p>
+      </details>
     </section>
   </main>
 

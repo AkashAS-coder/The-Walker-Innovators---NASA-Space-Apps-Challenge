@@ -17,6 +17,7 @@ Every dataset, web page and library used in this project.
 | USDA NASS Cropland Data Layer (CropScape), 2016–2025 | Crop history for each field; choosing real crop fields for the demo | https://nassgeodata.gmu.edu/CropScape/ |
 | Virginia Cooperative Extension, Agronomy Handbook (SPES-299) | Crop traits: corn, soybean, grain sorghum, alfalfa | https://www.pubs.ext.vt.edu/content/dam/pubs_ext_vt_edu/424/424-100/spes-299.pdf |
 | SARE, Managing Cover Crops Profitably (3rd ed.): winter wheat, cereal rye, crimson clover, sorghum-sudangrass, brassicas chapters | Crop traits for cover and forage crops | https://www.sare.org/resources/managing-cover-crops-profitably-3rd-edition/ |
+| USDA NRCS, "Soil Health" page: "reduce disturbance, maximize cover, promote biodiversity, and support living roots" | The basis for the four soil warning signs and the "Why we believe this" section | https://www.nrcs.usda.gov/conservation-basics/soil/soil-health |
 | NASA Earth Observatory, "Measuring Vegetation (NDVI & EVI)" | NDVI meaning and the bare-ground threshold | https://earthobservatory.nasa.gov/features/MeasuringVegetation |
 | CRESS grower survey (team's own, 16 anonymous responses, Nov 2026) | Problem statement only (slides). Not in the repo. | — |
 

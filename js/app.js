@@ -87,7 +87,8 @@ function buildInputs() {
     $(id).addEventListener('change', render);
   }
 
-  const defaults = { water: 3, soil: 4, income: 3, forage: 1, erosion: 3 };
+  // Soil health and erosion start a step higher because soil is this tool's focus.
+  const defaults = { water: 3, soil: 4, income: 3, forage: 1, erosion: 4 };
   $('sliders').innerHTML = Object.entries(PRIORITIES).map(([key, label]) => `
     <div class="slider">
       <label for="w-${key}">${label} <output id="o-${key}">${defaults[key]}</output></label>
@@ -317,29 +318,74 @@ function renderOptions() {
 
   $('risk-strip').innerHTML = monthStrip(results[0], true);
   $('finding').innerHTML = findingSentence(results);
+  renderSoilCheck(results[0]);
 
   const fewNote = results.length < 3
     ? `<p class="muted">Only ${results.length - 1} alternative fits your region and limits. Untick "no hay equipment" to see more.</p>` : '';
-  $('options').innerHTML = fewNote + results.map(r => `
+  const litNow = results[0].warnings.filter(w => w.lit).length;
+  const label = id => results[0].warnings.find(w => w.id === id).label.toLowerCase();
+  $('options').innerHTML = fewNote + results.map(r => {
+    const lit = r.warnings.filter(w => w.lit).length;
+    const fixLine = r.isCurrent
+      ? `<strong>${lit} of 4</strong> soil warning signs on`
+      : litNow === 0 ? 'No warning signs to fix on this field'
+        : `Fixes <strong>${r.fixes.length} of ${litNow}</strong> warning sign${litNow === 1 ? '' : 's'}`;
+    const addLine = r.adds.length ? `<p class="adds">Adds a new warning: ${r.adds.map(label).join(', ')}</p>` : '';
+    return `
     <article class="option ${r.isCurrent ? 'current' : ''} ${!r.isCurrent && r.total === best ? 'best' : ''}">
       <span class="badge">${r.isCurrent ? 'What you grow now' : r.total === best ? 'Best fit for your priorities' : 'Alternative'}</span>
-      <a class="honest" href="#unk-${r.rotation.id}">Shows its limits: ${r.explain.unknowns.length} things we don't know ↓</a>
       <h3>${esc(r.rotation.name)}</h3>
       <p class="seq">${esc(sequenceText(r.rotation))}</p>
-      <div class="fit"><span class="big">${r.total}</span><span class="muted">/ 100 fit score</span></div>
-      <div class="bars">${Object.entries(PRIORITIES).map(([k, label]) => `
-        <div class="bar"><span>${label}</span><span class="track"><span class="fill" style="width:${Math.round(r.sub[k].score)}%; display:block"></span></span><span>${Math.round(r.sub[k].score)}</span></div>`).join('')}
-      </div>
+      <p class="fixes">${fixLine}</p>
+      ${addLine}
+      <ul class="mini-signs">${r.warnings.map(w =>
+        `<li class="${w.lit ? 'on' : 'off'}"><span class="dot" aria-hidden="true"></span>${esc(w.label)}: ${w.lit ? 'warning' : 'OK'}</li>`).join('')}</ul>
       <div>
         <p class="small muted" style="margin:.2rem 0">Months with a crop growing (green) vs bare (tan) · bare months: ${r.bareMonths.length || 'none'}</p>
         <div class="month-strip">${monthStrip(r, false)}</div>
       </div>
+      <div class="fit"><span class="big">${r.total}</span><span class="muted">/ 100 fit for your priorities</span></div>
+      <div class="bars">${Object.entries(PRIORITIES).map(([k, name]) => `
+        <div class="bar"><span>${name}</span><span class="track"><span class="fill" style="width:${Math.round(r.sub[k].score)}%; display:block"></span></span><span>${Math.round(r.sub[k].score)}</span></div>`).join('')}
+      </div>
       <div class="box why"><h4>Why suggested</h4>${list(r.explain.why)}</div>
-      <div class="box evidence"><h4>Evidence</h4>${list(r.explain.evidence)}</div>
-      <div class="box benefits"><h4>Benefits</h4>${list(r.explain.benefits)}</div>
-      <div class="box unknowns" id="unk-${r.rotation.id}"><h4>What we don't know</h4>${list(r.explain.unknowns)}</div>
-      <div class="box check"><h4>Check locally</h4>${list(r.explain.checkLocally)}</div>
-    </article>`).join('');
+      <details class="evidence-more">
+        <summary>Evidence, benefits, what we don't know (${r.explain.unknowns.length}), what to check locally</summary>
+        <div class="box evidence"><h4>Evidence</h4>${list(r.explain.evidence)}</div>
+        <div class="box benefits"><h4>Benefits</h4>${list(r.explain.benefits)}</div>
+        <div class="box unknowns"><h4>What we don't know</h4>${list(r.explain.unknowns)}</div>
+        <div class="box check"><h4>Check locally</h4>${list(r.explain.checkLocally)}</div>
+      </details>
+    </article>`;
+  }).join('');
+}
+
+// The hero: one headline sentence and four warning-sign tiles for what the farmer grows now.
+function renderSoilCheck(current) {
+  const lit = current.warnings.filter(w => w.lit).length;
+  const ndvi = state.cache[state.field.id].ind.ndvi;
+  const monthly = state.cache[state.field.id].ind.monthly;
+  let satellite = '';
+  if (ndvi.available) {
+    const bare = ndvi.byMonth.filter(m => m.bare);
+    const total = monthly.reduce((s, m) => s + m.extremeRainPerYear, 0);
+    const inBare = bare.reduce((s, m) => s + monthly[m.month - 1].extremeRainPerYear, 0);
+    if (bare.length && total > 0) {
+      satellite = ` Satellites saw this spot with little plant cover in ${bare.map(m => m.name).join(', ')}, ` +
+        `the months that get ${Math.round(inBare / total * 100)}% of its heavy-rain days. ` +
+        `<span class="tag tag-modis">MODIS NDVI</span> <span class="tag">NASA POWER</span>`;
+    }
+  }
+  $('headline').innerHTML = `<p class="big-line"><strong>${lit} of 4</strong> soil warning sign${lit === 1 ? ' is' : 's are'} on for what you grow now.</p>` +
+    (satellite ? `<p>${satellite}</p>` : '');
+  $('soil-check').innerHTML = current.warnings.map(w => `
+    <div class="sign ${w.lit ? 'on' : 'off'}">
+      <p class="status">${w.lit ? 'Warning' : 'OK'}</p>
+      <h3>${esc(w.label)}</h3>
+      <p class="number">${esc(w.number)}</p>
+      <p class="reason">${esc(w.reason)}</p>
+      <p class="source">${esc(w.source)}</p>
+    </div>`).join('');
 }
 
 // One plain sentence at the top: which option fits best and the biggest reasons why.
@@ -348,6 +394,9 @@ function findingSentence(results) {
   if (!alts.length) return '';
   const top = alts.reduce((a, b) => (b.total > a.total ? b : a));
   const field = state.field;
+  const litNow = current.warnings.filter(x => x.lit).length;
+  const fixes = litNow && top.fixes.length
+    ? ` It turns off ${top.fixes.length} of the ${litNow} soil warning sign${litNow === 1 ? '' : 's'} on your field.` : '';
   if (top.total <= current.total) {
     return `<strong>For ${esc(field.place)}:</strong> what you grow now (${current.total}/100) already fits your priorities ` +
            `as well as any option we checked. Moving the sliders may change that.`;
@@ -358,7 +407,7 @@ function findingSentence(results) {
     .filter(g => g.d > 0 && w[g.k] > 0).sort((a, b) => b.wd - a.wd).slice(0, 2);
   const why = gains.length ? `, mostly from ${gains.map(g => `${PRIORITIES[g.k].toLowerCase()} (+${Math.round(g.d)})`).join(' and ')}` : '';
   return `<strong>For ${esc(field.place)}:</strong> “${esc(top.rotation.name)}” scores ${top.total}/100 against ` +
-         `${current.total} for what you grow now${why}. Take it to your extension agent before changing anything.`;
+         `${current.total} for what you grow now${why}.${fixes} Take it to your extension agent before changing anything.`;
 }
 
 init();

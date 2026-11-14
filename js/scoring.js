@@ -386,8 +386,9 @@ function buildExplanation(result, current, field, weights) {
 // ---------- soil warning signs ----------
 
 // Four signs that a crop cycle wears soil down, checked for one rotation on one field.
-// Each follows a soil health principle from USDA NRCS and SARE: keep the soil covered,
-// keep living roots in the ground, add legumes, and match crops to the water you have.
+// The first three follow USDA NRCS soil health advice ("maximize cover", "support living
+// roots", "promote biodiversity") and the legume entries in VCE and SARE. The fourth
+// (thirsty crops in drying months) is our own check on NASA POWER soil wetness.
 // Returns { id, label, lit, number, reason, source } for each sign. lit = the warning is on.
 function soilWarnings(result, field) {
   const r = result.rotation;

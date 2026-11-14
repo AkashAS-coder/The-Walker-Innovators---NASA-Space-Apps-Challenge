@@ -1,10 +1,10 @@
-# Field Shift Rotation Explorer
+# Field Shift: Soil Health Check
 
 The Walker Innovators · NASA Space Apps Challenge 2026 · Challenge: **Field Shift: Adapting Farms with NASA Data**
 
-A decision-support web page for farmers. Pick a field, tell it what you grow now, and set what matters to you. It reads 21 years of NASA data for that field and compares three crop rotations side by side: your current one and the two that best fit your field and priorities. Each option shows **why it was suggested, the evidence, the benefits, what we don't know, and what to check locally**.
+**Is your field's soil wearing out?** A decision-support web page for farmers, focused on one problem: soil degradation, and how the crop cycle you grow can cause it or fix it.
 
-> Compare rotations, reveal trade-offs, understand risk, make uncertainty visible.
+Pick a field and tell it what you grow now. It reads 21 years of NASA data for that field and checks **four soil warning signs**: soil washing away (bare ground in heavy-rain months), soil losing organic matter (winters with no living roots), nitrogen running down (no legume), and thirsty crops in drying months. Then it compares three crop rotations side by side: your current one and the two that best fit your field and priorities, each showing which warning signs it fixes. Each option shows **why it was suggested, the evidence, the benefits, what we don't know, and what to check locally**.
 
 **This tool supports your decision. It does not replace your judgment or your local extension agent.**
 
@@ -22,13 +22,10 @@ To publish it, turn on GitHub Pages for the `main` branch (Settings → Pages). 
 
 ## What it does
 
-1. **Pick your field** on a map or from a list (Henry County, VA, and a second region near Fallon, NV).
-2. **Tell us about your farm**: current rotation, soil texture (pre-filled from the USDA soil survey), irrigated or not, and whether you have hay equipment. The crop history CropScape recorded for the field is shown.
-3. **Your field today**: weather and water cards built from NASA POWER (frost-free season, frost dates, hot days, growing-season rain, dry spells, extreme rain, soil-moisture anomaly), a soil card, year-by-year trend charts, a MODIS greenness chart showing when the field is bare, and a month-by-month strip flagging when your current crops look vulnerable.
-4. **What matters to you**: five sliders (save water, build soil health, extra income, forage, reduce erosion).
-5. **Three options side by side**: fit score, five sub-scores, a bare-vs-covered month strip, and the five explanation boxes.
-
-It also has a glossary of plain-language terms and a "How scoring works" section.
+1. **Check your soil**: pick your field on a map or from a list (Henry County, VA, and a second region near Fallon, NV) and what you grow now. The four warning signs light up for your current rotation, with the NASA or USDA number behind each one.
+2. **See the cycle**: a month-by-month strip of your current rotation (bare months, heavy-rain months, crops at risk) next to the MODIS greenness chart that shows when satellites saw the field bare.
+3. **Compare fixes**: five priority sliders and three rotation cards. Each card leads with how many warning signs it fixes (and any new one it adds), then the fit score, sub-scores and the five explanation boxes.
+4. **Why we believe this**: the soil health principle behind each warning sign, plus the full NASA POWER weather cards, soil survey, glossary, scoring rules and sources.
 
 ## NASA data used
 

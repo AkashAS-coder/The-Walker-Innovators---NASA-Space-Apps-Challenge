@@ -1,0 +1,50 @@
+# 3-minute demo script
+
+For the live demo and the video. Every number below is what the app shows for the Henry County demo field with the default settings on Nov 14, 2026. If the data or rules change, re-read the numbers from the screen before presenting.
+
+## 0:00 – 0:30 · The problem
+
+> "Soil wears out slowly, and you can't see it from the tractor. Topsoil washes off bare ground in a heavy rain. Organic matter drops when nothing is growing all winter. By the time yields fall, the damage is years old."
+
+Open the app. It loads straight onto a real crop field in Henry County, Virginia, picked from the USDA Cropland Data Layer.
+
+## 0:30 – 1:15 · Step 1: Check your soil
+
+Point at the headline: **"3 of 4 soil warning signs are on for what you grow now."**
+
+> "This farm grows corn, then wheat with double-crop soybean. We read 21 years of NASA POWER weather and five years of MODIS satellite greenness for this exact spot. Satellites saw it with little plant cover in December, January and February."
+
+Walk across the four tiles. Each one names its data source.
+
+- Soil washing away: bare ground in a heavy-rain month (NASA POWER).
+- Soil losing organic matter: living roots in only half of winters.
+- Nitrogen: OK, because soybean is a legume.
+- Thirsty crops: corn grows in May and June, when root-zone soil was drier than usual in 2021–2025.
+
+## 1:15 – 1:45 · Step 2: See the cycle
+
+Scroll to the month strip and the greenness chart.
+
+> "Here's the cycle month by month. Tan means bare. The chart is what the satellite actually saw: green in summer, brown in winter. That bare winter window is where the soil loss happens."
+
+## 1:45 – 2:30 · Step 3: Compare fixes
+
+Point at the finding sentence and the three cards.
+
+> "We compare what you grow now with the two rotations that best fit this field. Sorghum, then wheat and double-crop soybean, turns off all three warning signs and scores 83 against 56."
+
+Move the **Forage** slider from 1 to 5. The forage option climbs from 69 to 72 and the others drop a little. Sorghum stays on top: "For this field, the soil fix holds up even when the farmer cares more about hay."
+
+Open "Evidence, benefits, what we don't know" on one card:
+
+> "Every option shows why it was suggested, the evidence, the benefits, what we don't know, and what to check locally. For example, we only have 100 of 115 satellite images, and our crop water ratings still need an agronomist to check them."
+
+## 2:30 – 3:00 · Why trust it, and what's next
+
+Scroll to "Why we believe this".
+
+> "Each warning sign comes from published soil health advice from USDA NRCS, SARE and Virginia Extension, applied to real NASA data. No black box. It supports the farmer's decision and the extension agent's advice; it never tells anyone what to plant. Next: on-the-ground soil sensors to check what the satellite sees."
+
+## Backup if the internet is down
+
+The app reads only saved data files, so the warning signs, month strip and three cards work offline from `python3 -m http.server 8000`. The map (Leaflet) and the charts (Chart.js) load from the internet, so they will be missing offline; use the field list instead and keep a screenshot of the greenness chart ready.
