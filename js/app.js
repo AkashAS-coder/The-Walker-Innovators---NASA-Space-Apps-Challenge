@@ -332,7 +332,7 @@ function renderOptions() {
     const fixLine = r.isCurrent
       ? `<strong>${lit} of 4</strong> soil warning signs on`
       : litNow === 0 ? 'No warning signs to fix on this field'
-        : `Fixes <strong>${r.fixes.length} of ${litNow}</strong> warning sign${litNow === 1 ? '' : 's'}`;
+        : `Clears <strong>${r.fixes.length} of ${litNow}</strong> warning sign${litNow === 1 ? '' : 's'} under our rules`;
     const addLine = r.adds.length ? `<p class="adds">Adds a new warning: ${r.adds.map(label).join(', ')}</p>` : '';
     return `
     <article class="option ${r.isCurrent ? 'current' : ''} ${!r.isCurrent && r.total === best ? 'best' : ''}">
@@ -385,7 +385,7 @@ function renderSoilCheck(current) {
   $('headline').innerHTML = `<p class="big-line">With what you grow now, your soil is covered for <strong>${cover.value.replace(' covered', '')}</strong> of the heavy-rain season.</p>` +
     (satellite ? `<p>${satellite}</p>` : '') +
     `<p>${lit} of 4 soil warning sign${lit === 1 ? ' is' : 's are'} on (below).</p>`;
-  const statusWord = { measured: 'Measured', partial: 'Stand-in', unknown: 'Unknown' };
+  const statusWord = { measured: 'From data', partial: 'Stand-in', unknown: 'Unknown' };
   $('rusle-factors').innerHTML = factors.map(f => `
     <div class="factor ${f.status}${f.changes ? ' changes' : ''}">
       <p class="letter">${f.id}</p>
@@ -413,7 +413,7 @@ function findingSentence(results) {
   const field = state.field;
   const litNow = current.warnings.filter(x => x.lit).length;
   const fixes = litNow && top.fixes.length
-    ? ` It turns off ${top.fixes.length} of the ${litNow} soil warning sign${litNow === 1 ? '' : 's'} on your field.` : '';
+    ? ` Under our rules it clears ${top.fixes.length} of the ${litNow} soil warning sign${litNow === 1 ? '' : 's'} on your field.` : '';
   if (top.total <= current.total) {
     return `<strong>For ${esc(field.place)}:</strong> what you grow now (${current.total}/100) already fits your priorities ` +
            `as well as any option we checked. Moving the sliders may change that.`;
@@ -430,10 +430,12 @@ function findingSentence(results) {
 // ---------- pages ----------
 // The site is one HTML file with several <section class="page">. The #hash in the address
 // (#home, #field, #compare...) picks which one shows, so Back buttons and bookmarks work.
-const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'science', 'account'];
+const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'science'];
 const STEPS = ['field', 'soil', 'year', 'compare'];
 
 function showPage() {
+  // Old #account links open the sign-in pop-up over the home page.
+  if (location.hash === '#account') { history.replaceState(null, '', '#home'); openSignIn(); }
   const id = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
   document.querySelectorAll('.page').forEach(p => { p.hidden = p.dataset.page !== id; });
   document.querySelectorAll('[data-nav]').forEach(a =>
@@ -450,7 +452,6 @@ function showPage() {
   if (state.map && id === 'field') { state.map.invalidateSize(); state.map.fitBounds(state.mapBounds); }
   Object.values(state.charts).forEach(c => c && c.resize());
   if (id === 'myfarm') renderSaved();
-  if (id === 'account') renderAccount();
 }
 
 // ---------- My farm: saved checks ----------
@@ -566,6 +567,31 @@ async function runSignIn(action) {
   }
   try { await action(); } catch (err) { $('account-error').textContent = signInError(err); }
 }
+
+// The sign-in pop-up. CSS fades it in; closeSignIn lets it fade out before it closes.
+function openSignIn() {
+  const d = $('signin-dialog');
+  if (d.open) return;
+  renderAccount();
+  $('account-error').textContent = '';
+  d.classList.remove('closing');
+  d.showModal();
+}
+function closeSignIn() {
+  const d = $('signin-dialog');
+  if (!d.open || d.classList.contains('closing')) return;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { d.close(); return; }
+  d.classList.add('closing');
+  // 180 ms matches the fade-out in style.css. A timer always fires; animationend sometimes doesn't.
+  setTimeout(() => { d.classList.remove('closing'); d.close(); }, 180);
+}
+$('nav-account').addEventListener('click', openSignIn);
+$('signin-close').addEventListener('click', closeSignIn);
+$('go-myfarm').addEventListener('click', closeSignIn);
+// A click on the dimmed area outside the box lands on the <dialog> itself.
+$('signin-dialog').addEventListener('click', e => { if (e.target === $('signin-dialog')) closeSignIn(); });
+$('signin-dialog').addEventListener('cancel', e => { e.preventDefault(); closeSignIn(); }); // Esc key
 
 $('google-signin').addEventListener('click', () => runSignIn(() => window.cloud.signIn()));
 $('email-form').addEventListener('submit', e => {

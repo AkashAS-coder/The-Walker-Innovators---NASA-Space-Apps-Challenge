@@ -481,7 +481,7 @@ function erosionFactors(result, field) {
     { id: 'K', name: 'Soil erodibility', term: 'K factor', status: k === null ? 'unknown' : 'measured',
       value: k === null ? 'Not in soil survey' : k.toFixed(2),
       note: k === null ? 'No soil survey value saved for this field.'
-                       : `How easily this soil's particles wash away; higher means easier. Measured for ${soil.compname || 'this'} soil (${(soil.texdesc || '').toLowerCase()}).`,
+                       : `How easily this soil's particles wash away; higher means easier. From the USDA soil survey for ${soil.compname || 'this'} soil (${(soil.texdesc || '').toLowerCase()}).`,
       source: 'USDA soil survey (SSURGO Kw)' },
     { id: 'LS', name: 'Slope', term: 'length-slope factor', status: slope === null ? 'unknown' : 'partial',
       value: slope === null ? 'Unknown' : `${slope}% slope`,

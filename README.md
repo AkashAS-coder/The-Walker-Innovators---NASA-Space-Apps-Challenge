@@ -2,9 +2,9 @@
 
 The Walker Innovators · NASA Space Apps Challenge 2026 · Challenge: **Field Shift: Adapting Farms with NASA Data**
 
-**Is your field's topsoil washing away?** A decision-support web page for farmers built around one scientific idea: **soil erosion**, measured the way USDA does with the **Revised Universal Soil Loss Equation (RUSLE)**: soil loss A = R (rain erosivity) × K (soil erodibility) × LS (slope) × C (cover) × P (conservation practices). We fill in each factor with real data where we have it (K from the USDA soil survey, heavy rain from NASA POWER, cover from MODIS NDVI and the crop calendar) and say plainly where we do not. Cover (C) is the one factor a crop rotation changes, so that is what the three options are compared on.
+**Is your field's topsoil washing away?** A decision-support web page for farmers built around one scientific idea: **soil erosion risk**, organized around USDA's **Revised Universal Soil Loss Equation (RUSLE)** framework: soil loss A = R (rain erosivity) × K (soil erodibility) × LS (slope) × C (cover) × P (conservation practices). We fill in each factor with real data where we have it (K from the USDA soil survey, heavy rain from NASA POWER, cover from MODIS NDVI and the crop calendar) and say plainly where we do not. Cover (C) is the one factor a crop rotation changes, so that is what the three options are compared on. We use RUSLE's factors as risk indicators only: the site does not calculate or predict tons of soil lost per acre.
 
-Pick a field and tell it what you grow now. It reads 21 years of NASA data for that field and checks **four soil warning signs**: soil washing away (bare ground in heavy-rain months), soil losing organic matter (winters with no living roots), nitrogen running down (no legume), and thirsty crops in drying months. Then it compares three crop rotations side by side: your current one and the two that best fit your field and priorities, each showing which warning signs it fixes. Each option shows **why it was suggested, the evidence, the benefits, what we don't know, and what to check locally**.
+Pick a field and tell it what you grow now. It reads 21 years of NASA data for that field and checks **four soil warning signs**: soil washing away (bare ground in heavy-rain months), soil losing organic matter (winters with no living roots), nitrogen running down (no legume), and thirsty crops in drying months. Then it compares three crop rotations side by side: your current one and the two that best fit your field and priorities, each showing which warning signs it clears under our rules. Each option shows **why it was suggested, the evidence, the benefits, what we don't know, and what to check locally**.
 
 **This tool supports your decision. It does not replace your judgment or your local extension agent.**
 
@@ -57,7 +57,7 @@ node --test tests/run.test.js
 
 ## Sign-in and the AI helper (optional)
 
-- **Sign in** (the "Sign in" link in the menu) uses Firebase Authentication, with Google or an email and password. When you're signed in, the checks you save on "My farm" are also stored in Cloud Firestore at `users/{your id}/checks/`, so they follow you to any device. We store only your email (inside Firebase Authentication) and the checks you choose to save. You never need an account: without one, checks save in your browser as before.
+- **Sign in** (the "Sign in" button at the top of every page opens a pop-up) uses Firebase Authentication, with Google or an email and password. When you're signed in, the checks you save on "My farm" are also stored in Cloud Firestore at `users/{your id}/checks/`, so they follow you to any device. We store only your email (inside Firebase Authentication) and the checks you choose to save. You never need an account: without one, checks save in your browser as before.
 - **"Ask about these results"** (bottom of step 4) is a chatbot that uses Google Gemini through Firebase AI Logic. It gets a text copy of what the page shows, including the scores, the five boxes and the weather and soil cards. It is told to explain only those numbers, to say when it doesn't know, and never to say what to plant. It does not change any score: scores come from the fixed rules in `js/scoring.js`. Its answers are labeled "AI answer" and can be wrong.
 
 **Turning these on (one-time, about 10 minutes, done by the repo owner):**
@@ -80,6 +80,8 @@ Until step 1 is done, the site works as before, and the sign-in page and the hel
 - Water-need and heat ratings for most crops are our judgment; see [docs/CROP_CHECK.md](docs/CROP_CHECK.md) for which traits each source supports.
 - The demo fields are real crop pixels chosen from CropScape. We don't know who farms them, and no personal information is used.
 - Yields are not modeled.
+- The rankings come from transparent, hand-written scoring rules. They are not AI-generated and are not validated predictions: they have not been tested against real farm outcomes.
+- We don't compute soil loss in tons per acre. The RUSLE factors and the four warning signs are risk indicators, not measurements.
 - The AI helper can make mistakes even with its rules. It sees only the page's numbers, and the free Gemini tier has rate limits, so it may say it is busy during a demo.
 
 ## Libraries

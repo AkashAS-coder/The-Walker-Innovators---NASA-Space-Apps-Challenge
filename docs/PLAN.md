@@ -12,7 +12,7 @@ This section is the current plan. Where it disagrees with older sections below, 
 
 **Farmers need our app to see how their field's weather and soil are changing, and to compare three crop rotations side by side, including the one they grow now. Each option shows what it would do for their water, soil and income, with the NASA evidence behind it and what still needs checking with their extension agent.**
 
-**Pitch:** *"Our SI reads 20 years of NASA data on your field, finds the warning signs of drought, heat and soil loss, and shows which rotations fix them. It always shows its reasons and what it doesn't know."*
+**Pitch:** *"Our tool reads 20 years of NASA data on your field, flags warning signs of drought, heat and erosion risk with transparent rules, and shows which rotations clear them. It always shows its reasons and what it doesn't know."* Don't claim the rankings are AI-generated or validated predictions, or that we calculate tons of soil lost.
 
 **Slide 3 line:** *"Other tools tell you when to water. Ours shows you what to grow next, and what we don't know."*
 

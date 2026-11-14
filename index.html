@@ -26,7 +26,7 @@
       </div>
       <!-- Outside the menu so Sign in shows on phones too -->
       <div class="nav-actions">
-        <a href="#account" data-nav="account" class="nav-signin" id="nav-account">Sign in</a>
+        <button type="button" class="nav-signin" id="nav-account" aria-haspopup="dialog">Sign in</button>
         <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav-links">Menu</button>
       </div>
     </div>
@@ -247,7 +247,7 @@
         <p class="equation" aria-label="Soil loss equals rain power times soil erodibility times slope times cover times conservation practices">
           <span>A</span> = <span>R</span> × <span>K</span> × <span>LS</span> × <span class="c">C</span> × <span>P</span>
         </p>
-        <p class="small">USDA's <strong>Revised Universal Soil Loss Equation</strong>: soil loss (A) comes from five factors multiplied together. <strong>Only C, cover, changes with what you plant.</strong></p>
+        <p class="small">USDA's <strong>Revised Universal Soil Loss Equation</strong> estimates soil loss (A) by multiplying five factors. <strong>Only C, cover, changes with what you plant.</strong> We use the equation as a guide to which conditions raise erosion risk. We do not calculate how many tons of soil your field loses.</p>
         <div id="rusle-factors" class="factors"></div>
       </details>
 
@@ -316,7 +316,7 @@
         </details>
       </div>
 
-      <p class="small muted">Fit scores run from 0 to 100. See "The science" for the rules.</p>
+      <p class="small muted scores-note"><strong>What these scores are:</strong> a 0–100 fit from fixed, written scoring rules (see "The science"), weighted by your sliders. They are not AI predictions and have not been tested against real farm results. Some crop trait ratings still need checking, NASA POWER weather covers a grid cell about 50 km wide, and a MODIS pixel is 250 m wide, so treat the ranking as a starting point for a talk with your extension agent.</p>
       <div id="options" class="options"></div>
 
       <div class="notice" role="note">
@@ -343,43 +343,6 @@
       </section>
     </section>
 
-    <!-- ========== ACCOUNT (optional sign-in, js/cloud.js) ========== -->
-    <section class="page wrap" data-page="account" hidden>
-      <header class="page-head">
-        <p class="eyebrow">Account</p>
-        <h2>Sign in to keep your farm on any device</h2>
-        <p class="muted">You don't need an account. Every part of the tool works without one. Signing in only lets your saved soil checks follow you to your phone or another computer.</p>
-      </header>
-      <div class="account panel-card">
-        <p id="account-status" class="account-status" aria-live="polite">Checking sign-in…</p>
-
-        <div id="signed-out">
-          <button type="button" class="btn btn-primary" id="google-signin">Continue with Google</button>
-          <p class="or"><span>or use an email and password</span></p>
-          <form id="email-form" class="email-form">
-            <label for="email">Email</label>
-            <input id="email" type="email" autocomplete="email" required>
-            <label for="password">Password (at least 6 characters)</label>
-            <input id="password" type="password" autocomplete="current-password" minlength="6" required>
-            <div class="email-actions">
-              <button type="submit" class="btn btn-primary" data-mode="in">Sign in</button>
-              <button type="submit" class="btn btn-ghost" data-mode="up">Create account</button>
-            </div>
-          </form>
-        </div>
-
-        <div id="signed-in" hidden>
-          <div class="email-actions">
-            <a class="btn btn-primary" href="#myfarm">Go to My farm</a>
-            <button type="button" class="btn btn-ghost" id="sign-out">Sign out</button>
-          </div>
-        </div>
-
-        <p id="account-error" class="small account-error" aria-live="polite"></p>
-      </div>
-      <p class="small muted">What we store: your email (kept by Firebase Authentication) and the soil checks you choose to save. Nothing else. Only you can read your checks.</p>
-    </section>
-
     <!-- ========== MY FARM ========== -->
     <section class="page wrap" data-page="myfarm" hidden>
       <header class="page-head">
@@ -399,10 +362,10 @@
       </header>
       <div class="principle rusle-why">
         <h3>RUSLE, the soil erosion equation</h3>
-        <p>USDA has used the Universal Soil Loss Equation to plan soil conservation on farms since the 1960s; the revised version (RUSLE) is in USDA Agriculture Handbook 703 (Renard and others, 1997). It says soil loss = rain erosivity (R) × soil erodibility (K) × slope (LS) × cover (C) × conservation practices (P). Rain, soil and slope are mostly fixed for a field, so cover is the main factor a farmer controls through the crop cycle.</p>
-        <p class="small muted">What we do not do: we do not compute soil loss in tons per acre. True R needs 30-minute rainfall intensity, and NASA POWER is daily. Slope length is unknown. Exact C values need crop-stage tables. So we show each factor with the real value we have, and say which are stand-ins.</p>
+        <p>USDA has used the Universal Soil Loss Equation to plan soil conservation on farms since the 1960s; the revised version (RUSLE) is in USDA Agriculture Handbook 703 (Renard and others, 1997). It estimates soil loss = rain erosivity (R) × soil erodibility (K) × slope (LS) × cover (C) × conservation practices (P). Rain, soil and slope are mostly fixed for a field, so cover is the main factor a farmer controls through the crop cycle.</p>
+        <p class="small muted">What we do not do: we do not predict or compute soil loss in tons per acre, so the warning signs are risk indicators, not measurements. True R needs 30-minute rainfall intensity, and NASA POWER is daily. Slope length is unknown. Exact C values need crop-stage tables. So we show each factor with the real value we have, and say which are stand-ins.</p>
       </div>
-      <p>Soil can't be measured from space directly. So we look for the conditions that wear soil down and show which crop cycles reduce them. Each warning sign comes from a published soil health principle:</p>
+      <p>Soil can't be measured from space directly. So we look for the conditions that wear soil down and show which crop cycles should lower that risk, based on published advice. Each warning sign comes from a published soil health principle:</p>
       <div class="principles">
         <div class="principle">
           <h3>Soil washing away</h3>
@@ -447,7 +410,7 @@
         <summary>Words we use</summary>
         <dl class="glossary">
           <dt>Soil erosion</dt><dd>Topsoil carried off a field by rain or wind. Topsoil holds most of a field's nutrients and organic matter, and it takes many years to rebuild.</dd>
-          <dt>RUSLE</dt><dd>The Revised Universal Soil Loss Equation, USDA's formula for how much soil rain washes off a field: A = R × K × LS × C × P.</dd>
+          <dt>RUSLE</dt><dd>The Revised Universal Soil Loss Equation, USDA's formula for estimating how much soil rain washes off a field: A = R × K × LS × C × P. We use its factors to point out risk; we don't calculate A.</dd>
           <dt>Rainfall erosivity (R)</dt><dd>How hard and how often rain hits the ground. A few heavy storms do more damage than many light showers.</dd>
           <dt>Soil erodibility (K)</dt><dd>How easily a soil's particles break loose and wash away. It comes from the soil's mix of sand, silt, clay and organic matter.</dd>
           <dt>Cover-management factor (C)</dt><dd>How well plants and residue shield the soil from rain. Living cover in rainy months lowers C, and so lowers soil loss.</dd>
@@ -502,6 +465,42 @@
       <p class="small">Made by The Walker Innovators for the NASA Space Apps Challenge 2026, "Field Shift: Adapting Farms with NASA Data." Photos: USDA NRCS (public domain). Map data © OpenStreetMap contributors.</p>
     </div>
   </footer>
+
+  <!-- ========== SIGN-IN POP-UP (optional, js/cloud.js) ========== -->
+  <!-- A <dialog> opened with showModal(): centered, dims the page, closes with Esc, the × or a click outside. -->
+  <dialog id="signin-dialog" class="signin-dialog" aria-labelledby="signin-title">
+    <button type="button" class="dialog-close" id="signin-close" aria-label="Close">×</button>
+    <p class="eyebrow">Account</p>
+    <h2 id="signin-title">Sign in to keep your farm on any device</h2>
+    <p class="small muted">You don't need an account. Every part of the tool works without one. Signing in only lets your saved soil checks follow you to your phone or another computer.</p>
+
+    <p id="account-status" class="account-status" aria-live="polite">Checking sign-in…</p>
+
+    <div id="signed-out">
+      <button type="button" class="btn btn-primary btn-wide" id="google-signin">Continue with Google</button>
+      <p class="or"><span>or use an email and password</span></p>
+      <form id="email-form" class="email-form">
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="email" required>
+        <label for="password">Password (at least 6 characters)</label>
+        <input id="password" type="password" autocomplete="current-password" minlength="6" required>
+        <div class="email-actions">
+          <button type="submit" class="btn btn-primary" data-mode="in">Sign in</button>
+          <button type="submit" class="btn btn-ghost" data-mode="up">Create account</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="signed-in" hidden>
+      <div class="email-actions">
+        <a class="btn btn-primary" href="#myfarm" id="go-myfarm">Go to My farm</a>
+        <button type="button" class="btn btn-ghost" id="sign-out">Sign out</button>
+      </div>
+    </div>
+
+    <p id="account-error" class="small account-error" aria-live="polite"></p>
+    <p class="small muted dialog-foot">What we store: your email (kept by Firebase Authentication) and the soil checks you choose to save. Nothing else. Only you can read your checks.</p>
+  </dialog>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>

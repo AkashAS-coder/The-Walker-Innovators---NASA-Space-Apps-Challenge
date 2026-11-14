@@ -12,13 +12,13 @@ Open the app. It loads straight onto a real crop field in Henry County, Virginia
 
 Point at the headline: **"With what you grow now, your soil is covered for 86% of the heavy-rain season."** Then the equation:
 
-> "USDA scientists predict soil erosion with one equation, RUSLE: soil loss equals rain power, times how easily the soil washes away, times slope, times cover, times conservation practices. For this field the soil survey measures K at 0.24 on a 5% slope. Rain, soil and slope you can't change. Cover, the green C, is the one a farmer controls with the crop cycle."
+> "USDA estimates soil erosion with one equation, RUSLE: soil loss equals rain power, times how easily the soil washes away, times slope, times cover, times conservation practices. For this field the USDA soil survey lists K at 0.24 on a 5% slope. Rain, soil and slope you can't change. Cover, the green C, is the one a farmer controls with the crop cycle."
 
-Point out the labels: K is measured; R and LS are stand-ins because NASA POWER is daily and slope length is unknown; P is unknown. "We don't invent the missing pieces, so we don't give a tons-per-acre number."
+Point out the labels: K is from the soil survey; R and LS are stand-ins because NASA POWER is daily and slope length is unknown; P is unknown. "We don't invent the missing pieces, so we don't give a tons-per-acre number. These are risk signs, not a soil-loss prediction."
 
 Then the warning signs: **"3 of 4 soil warning signs are on."**
 
-> "This farm grows corn, then wheat with double-crop soybean. We read 21 years of NASA POWER weather and five years of MODIS satellite greenness for this exact spot. Satellites saw it with little plant cover in December, January and February."
+> "This farm grows corn, then wheat with double-crop soybean. We read 21 years of NASA POWER weather and five years of MODIS satellite greenness for the 250-meter pixel around this spot. Satellites saw it with little plant cover in December, January and February."
 
 Walk across the four tiles. Each one names its data source.
 
@@ -31,13 +31,13 @@ Walk across the four tiles. Each one names its data source.
 
 Scroll to the month strip and the greenness chart.
 
-> "Here's the cycle month by month. Tan means bare. The chart is what the satellite actually saw: green in summer, brown in winter. That bare winter window is where the soil loss happens."
+> "Here's the cycle month by month. Tan means bare. The chart is what the satellite actually saw: green in summer, brown in winter. That bare winter window is when the soil is most exposed to erosion."
 
 ## 1:45 – 2:30 · Step 3: Compare fixes
 
 Point at the finding sentence and the three cards.
 
-> "We compare what you grow now with the two rotations that best fit this field. Sorghum, then wheat and double-crop soybean, raises cover in the heavy-rain season from 86% to 100%, turns off all three warning signs, and scores 83 against 56."
+> "We compare what you grow now with the two rotations that best fit this field. Sorghum, then wheat and double-crop soybean, raises cover in the heavy-rain season from 86% to 100%, clears all three warning signs under our rules, and scores 83 against 56. These scores come from written rules, not AI, and they haven't been tested on real farms yet, so it's a starting point for the extension agent."
 
 Move the **Forage** slider from 1 to 5. The forage option climbs from 69 to 72 and the others drop a little. Sorghum stays on top: "For this field, the soil fix holds up even when the farmer cares more about hay."
 
@@ -49,7 +49,7 @@ Open "Evidence, benefits, what we don't know" on one card:
 
 Scroll to "Why we believe this".
 
-> "The equation is USDA's own (Agriculture Handbook 703), and the warning signs come from published soil health advice from USDA NRCS, SARE and Virginia Extension, applied to real NASA data. No black box. It supports the farmer's decision and the extension agent's advice; it never tells anyone what to plant. Next: on-the-ground soil sensors to check what the satellite sees."
+> "The equation is USDA's own (Agriculture Handbook 703), and the warning signs come from published soil health advice from USDA NRCS, SARE and Virginia Extension, applied to real NASA data. No black box and no AI in the scores, just written rules you can read. It supports the farmer's decision and the extension agent's advice; it never tells anyone what to plant. Next: on-the-ground soil sensors to check what the satellite sees."
 
 ## Backup if the internet is down
 
