@@ -336,6 +336,7 @@ function renderOptions() {
       <span class="badge">${r.isCurrent ? 'What you grow now' : r.total === best ? 'Best fit for your priorities' : 'Alternative'}</span>
       <h3>${esc(r.rotation.name)}</h3>
       <p class="seq">${esc(sequenceText(r.rotation))}</p>
+      <p class="cover-line">Cover in the heavy-rain season (RUSLE C): <strong>${Math.round(r.sub.erosion.score)}%</strong>${r.isCurrent ? '' : ` <span class="muted">(now ${Math.round(results[0].sub.erosion.score)}%)</span>`}</p>
       <p class="fixes">${fixLine}</p>
       ${addLine}
       <ul class="mini-signs">${r.warnings.map(w =>
@@ -376,8 +377,21 @@ function renderSoilCheck(current) {
         `<span class="tag tag-modis">MODIS NDVI</span> <span class="tag">NASA POWER</span>`;
     }
   }
-  $('headline').innerHTML = `<p class="big-line"><strong>${lit} of 4</strong> soil warning sign${lit === 1 ? ' is' : 's are'} on for what you grow now.</p>` +
-    (satellite ? `<p>${satellite}</p>` : '');
+  const factors = erosionFactors(current, currentField());
+  const cover = factors.find(f => f.id === 'C');
+  $('headline').innerHTML = `<p class="big-line">With what you grow now, your soil is covered for <strong>${cover.value.replace(' covered', '')}</strong> of the heavy-rain season.</p>` +
+    (satellite ? `<p>${satellite}</p>` : '') +
+    `<p>${lit} of 4 soil warning sign${lit === 1 ? ' is' : 's are'} on (below).</p>`;
+  const statusWord = { measured: 'Measured', partial: 'Stand-in', unknown: 'Unknown' };
+  $('rusle-factors').innerHTML = factors.map(f => `
+    <div class="factor ${f.status}${f.changes ? ' changes' : ''}">
+      <p class="letter">${f.id}</p>
+      <h4>${esc(f.name)} <span class="term">(${esc(f.term)})</span></h4>
+      <p class="fvalue">${esc(f.value)}</p>
+      <p class="fstatus">${statusWord[f.status]}${f.changes ? ' · you control this one' : ''}</p>
+      <p class="fnote">${esc(f.note)}</p>
+      <p class="source">${esc(f.source)}</p>
+    </div>`).join('');
   $('soil-check').innerHTML = current.warnings.map(w => `
     <div class="sign ${w.lit ? 'on' : 'off'}">
       <p class="status">${w.lit ? 'Warning' : 'OK'}</p>

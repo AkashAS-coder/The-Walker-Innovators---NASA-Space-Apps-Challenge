@@ -10,7 +10,13 @@ Open the app. It loads straight onto a real crop field in Henry County, Virginia
 
 ## 0:30 – 1:15 · Step 1: Check your soil
 
-Point at the headline: **"3 of 4 soil warning signs are on for what you grow now."**
+Point at the headline: **"With what you grow now, your soil is covered for 86% of the heavy-rain season."** Then the equation:
+
+> "USDA scientists predict soil erosion with one equation, RUSLE: soil loss equals rain power, times how easily the soil washes away, times slope, times cover, times conservation practices. For this field the soil survey measures K at 0.24 on a 5% slope. Rain, soil and slope you can't change. Cover, the green C, is the one a farmer controls with the crop cycle."
+
+Point out the labels: K is measured; R and LS are stand-ins because NASA POWER is daily and slope length is unknown; P is unknown. "We don't invent the missing pieces, so we don't give a tons-per-acre number."
+
+Then the warning signs: **"3 of 4 soil warning signs are on."**
 
 > "This farm grows corn, then wheat with double-crop soybean. We read 21 years of NASA POWER weather and five years of MODIS satellite greenness for this exact spot. Satellites saw it with little plant cover in December, January and February."
 
@@ -31,7 +37,7 @@ Scroll to the month strip and the greenness chart.
 
 Point at the finding sentence and the three cards.
 
-> "We compare what you grow now with the two rotations that best fit this field. Sorghum, then wheat and double-crop soybean, turns off all three warning signs and scores 83 against 56."
+> "We compare what you grow now with the two rotations that best fit this field. Sorghum, then wheat and double-crop soybean, raises cover in the heavy-rain season from 86% to 100%, turns off all three warning signs, and scores 83 against 56."
 
 Move the **Forage** slider from 1 to 5. The forage option climbs from 69 to 72 and the others drop a little. Sorghum stays on top: "For this field, the soil fix holds up even when the farmer cares more about hay."
 
@@ -43,7 +49,7 @@ Open "Evidence, benefits, what we don't know" on one card:
 
 Scroll to "Why we believe this".
 
-> "Each warning sign comes from published soil health advice from USDA NRCS, SARE and Virginia Extension, applied to real NASA data. No black box. It supports the farmer's decision and the extension agent's advice; it never tells anyone what to plant. Next: on-the-ground soil sensors to check what the satellite sees."
+> "The equation is USDA's own (Agriculture Handbook 703), and the warning signs come from published soil health advice from USDA NRCS, SARE and Virginia Extension, applied to real NASA data. No black box. It supports the farmer's decision and the extension agent's advice; it never tells anyone what to plant. Next: on-the-ground soil sensors to check what the satellite sees."
 
 ## Backup if the internet is down
 

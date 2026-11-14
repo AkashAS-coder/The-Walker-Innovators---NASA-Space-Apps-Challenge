@@ -454,6 +454,51 @@ function soilWarnings(result, field) {
   return [erosion, organic, nitrogen, drying];
 }
 
+// ---------- RUSLE: the soil erosion equation ----------
+
+// The Revised Universal Soil Loss Equation (USDA Agriculture Handbook 703, Renard et al. 1997):
+//   A (soil loss) = R (rain erosivity) × K (soil erodibility) × LS (slope) × C (cover) × P (practices)
+// We do NOT compute A in tons per acre: R needs 30-minute storm intensity (NASA POWER is daily),
+// slope length is unknown, and C needs crop-stage tables we have not sourced. Instead we show each
+// factor with the real value we have, or say plainly that it is missing.
+// status: 'measured' (real value), 'partial' (a stand-in, explained), 'unknown' (no data).
+function erosionFactors(result, field) {
+  const months = field.ind.monthly;
+  const rainy = months.filter(m => m.extremeRainPerYear > RULES.HEAVY_RAIN_MONTH).map(m => m.name);
+  const soil = field.soil || {};
+  const k = soil.kwfact ? Number(soil.kwfact) : null;
+  const slope = soil.slope_r ? Number(soil.slope_r) : null;
+  const cover = round(result.sub.erosion.score);
+  // The cover share comes from the crop calendar. If satellites saw low cover in heavy-rain
+  // months, say so: real cover may be lower than the calendar suggests.
+  const satBare = field.ind.ndvi.available
+    ? field.ind.ndvi.byMonth.filter((m, i) => m.bare && months[i].extremeRainPerYear > RULES.HEAVY_RAIN_MONTH).map(m => m.name) : [];
+  return [
+    { id: 'R', name: 'Rain power', term: 'rainfall erosivity', status: 'partial',
+      value: field.ind.extremeRain.recent !== null ? `${field.ind.extremeRain.recent.toFixed(1)} heavy-rain days a year` : 'n/a',
+      note: `Days with over 2 in (50 mm) of rain, most often in ${rainy.join(', ') || 'no month'}. True R needs 30-minute storm intensity; NASA POWER is daily, so this is a stand-in.`,
+      source: 'NASA POWER' },
+    { id: 'K', name: 'Soil erodibility', term: 'K factor', status: k === null ? 'unknown' : 'measured',
+      value: k === null ? 'Not in soil survey' : k.toFixed(2),
+      note: k === null ? 'No soil survey value saved for this field.'
+                       : `How easily this soil's particles wash away; higher means easier. Measured for ${soil.compname || 'this'} soil (${(soil.texdesc || '').toLowerCase()}).`,
+      source: 'USDA soil survey (SSURGO Kw)' },
+    { id: 'LS', name: 'Slope', term: 'length-slope factor', status: slope === null ? 'unknown' : 'partial',
+      value: slope === null ? 'Unknown' : `${slope}% slope`,
+      note: 'Steeper ground loses more soil. Slope length is not known, so LS itself is not computed.',
+      source: 'USDA soil survey' },
+    { id: 'C', name: 'Cover', term: 'cover-management factor', status: 'partial', changes: true,
+      value: `${cover}% covered`,
+      note: 'Share of the heavy-rain season when a crop or cover crop is growing, from the crop calendar. This is the factor your crop rotation changes.' +
+        (satBare.length ? ` Satellites saw low plant cover in ${satBare.join(', ')}, so real cover may be lower.` : ''),
+      source: 'Crop calendar + NASA POWER' + (field.ind.ndvi.available ? ' + MODIS NDVI' : '') },
+    { id: 'P', name: 'Conservation practices', term: 'support practice factor', status: 'unknown',
+      value: 'Ask the farmer',
+      note: 'Contour farming, strips or terraces cut soil loss. Satellites cannot see these, so we leave them out.',
+      source: 'Not in our data' },
+  ];
+}
+
 // Score every rotation, keep the current one, and pick the two best alternatives.
 function compareRotations(rotations, currentId, field, weights, constraints = {}) {
   // Only rotations meant for this field's region, and no hay crops if the farmer has no hay equipment.
@@ -486,5 +531,5 @@ function compareRotations(rotations, currentId, field, weights, constraints = {}
 if (typeof module !== 'undefined') {
   ({ dayToDateLabel, THRESHOLDS } = require('./indicators.js'));
   module.exports = { LEVEL, PRIORITIES, RULES, SOIL_TEXTURES, parseCsv, parseCrops, parseRotations, inWindow,
-    coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths, soilWarnings };
+    coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths, soilWarnings, erosionFactors };
 }

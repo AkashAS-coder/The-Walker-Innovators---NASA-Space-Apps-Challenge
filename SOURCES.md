@@ -17,6 +17,7 @@ Every dataset, web page and library used in this project.
 | USDA NASS Cropland Data Layer (CropScape), 2016–2025 | Crop history for each field; choosing real crop fields for the demo | https://nassgeodata.gmu.edu/CropScape/ |
 | Virginia Cooperative Extension, Agronomy Handbook (SPES-299) | Crop traits: corn, soybean, grain sorghum, alfalfa | https://www.pubs.ext.vt.edu/content/dam/pubs_ext_vt_edu/424/424-100/spes-299.pdf |
 | SARE, Managing Cover Crops Profitably (3rd ed.): winter wheat, cereal rye, crimson clover, sorghum-sudangrass, brassicas chapters | Crop traits for cover and forage crops | https://www.sare.org/resources/managing-cover-crops-profitably-3rd-edition/ |
+| Renard, K.G. and others (1997), *Predicting Soil Erosion by Water: A Guide to Conservation Planning with the Revised Universal Soil Loss Equation (RUSLE)*, USDA Agriculture Handbook 703 | The RUSLE equation (A = R × K × LS × C × P) the page is built around; which factors we have and which we do not | https://www.ars.usda.gov/research/publications/publication/?seqNo115=92824 (chapter record, R factor) |
 | USDA NRCS, "Soil Health" page: "reduce disturbance, maximize cover, promote biodiversity, and support living roots" | The basis for the four soil warning signs and the "Why we believe this" section | https://www.nrcs.usda.gov/conservation-basics/soil/soil-health |
 | NASA Earth Observatory, "Measuring Vegetation (NDVI & EVI)" | NDVI meaning and the bare-ground threshold | https://earthobservatory.nasa.gov/features/MeasuringVegetation |
 | CRESS grower survey (team's own, 16 anonymous responses, Nov 2026) | Problem statement only (slides). Not in the repo. | — |
@@ -29,4 +30,5 @@ Every dataset, web page and library used in this project.
 | Chart.js | 4.4.1 | MIT | https://www.chartjs.org/ (loaded from cdnjs.cloudflare.com) |
 | OpenStreetMap map tiles | — | Data © OpenStreetMap contributors, ODbL | https://www.openstreetmap.org/copyright |
 | Python 3 standard library | 3.x | PSF | Fetch scripts |
+| taste-skill (design guidance only; no code or assets copied) | — | MIT | https://github.com/Leonxlnx/taste-skill |
 | Node.js built-in test runner | 18+ | MIT | Tests only |

@@ -128,3 +128,18 @@ test('a rotation with no legume lights the nitrogen warning', () => {
   assert.strictEqual(warningsFor('grain_no_hay', rainyJanField()).nitrogen, true);
   assert.strictEqual(warningsFor('corn_soy', rainyJanField()).nitrogen, false);
 });
+
+test('RUSLE factors use the real soil-survey K and say what is missing', () => {
+  const field = rainyJanField();
+  field.soil = { kwfact: '.24', slope_r: '5', compname: 'Clifford', texdesc: 'Fine sandy loam' };
+  field.ind.extremeRain = { recent: 0.8 };
+  const res = sc.scoreRotation(rotations.find(x => x.id === 'corn_soy'), field, even);
+  const f = Object.fromEntries(sc.erosionFactors(res, field).map(x => [x.id, x]));
+  assert.strictEqual(f.K.value, '0.24');
+  assert.strictEqual(f.K.status, 'measured');
+  assert.strictEqual(f.P.status, 'unknown');
+  assert.ok(f.C.changes);
+  // A cover crop raises the cover factor's covered share.
+  const covered = sc.scoreRotation(rotations.find(x => x.id === 'corn_soy_cover'), field, even);
+  assert.ok(covered.sub.erosion.score > res.sub.erosion.score);
+});

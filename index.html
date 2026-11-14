@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Field Shift: Soil Health Check</title>
+  <title>Field Shift: Soil Erosion Check</title>
   <meta name="description" content="Is your field's soil wearing out? Check four soil warning signs from 20 years of NASA Earth data, then compare crop cycles that could fix them. Built by The Walker Innovators for the NASA Space Apps Challenge 2026.">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%228%22 fill=%22%232f6b3a%22/%3E%3C/svg%3E">
@@ -12,9 +12,9 @@
 <body>
   <header class="top">
     <div class="wrap">
-      <p class="eyebrow">Field Shift · Soil Health Check</p>
-      <h1>Is your field's soil wearing out?</h1>
-      <p class="lead">We read 20 years of NASA satellite and weather data for your field, look for four warning signs that soil is wearing down, and compare crop cycles that could fix them. Every number shows where it came from and what we still don't know.</p>
+      <p class="eyebrow">Field Shift · Soil Erosion Check</p>
+      <h1>Is your field's topsoil washing away?</h1>
+      <p class="lead">Soil erosion is topsoil carried off by rain, and it is the main way farm soil wears out. We look at your field through the same equation USDA scientists use for it, called RUSLE, filled in with 20 years of NASA satellite and weather data. Then we compare crop cycles that keep more of your soil in place. Every number shows where it came from and what we still don't know.</p>
       <nav class="steps-bar" aria-label="Steps">
         <a href="#step-check"><span class="num">1</span> Check your soil</a>
         <a href="#step-cycle"><span class="num">2</span> See the cycle</a>
@@ -57,6 +57,17 @@
       </div>
 
       <div class="headline" id="headline" aria-live="polite"></div>
+
+      <div class="rusle">
+        <h3>The science: how much soil rain carries away</h3>
+        <p class="equation" aria-label="Soil loss equals rain power times soil erodibility times slope times cover times conservation practices">
+          <span>A</span> = <span>R</span> × <span>K</span> × <span>LS</span> × <span class="c">C</span> × <span>P</span>
+        </p>
+        <p class="small">The <strong>Revised Universal Soil Loss Equation (RUSLE)</strong> from the USDA Agricultural Research Service: soil loss (A) comes from five factors multiplied together. Four of them belong to your land and weather. <strong>Only C, cover, changes with what you plant.</strong></p>
+        <div id="rusle-factors" class="factors"></div>
+      </div>
+
+      <h3>Four warning signs for your soil</h3>
       <div id="soil-check" class="signs"></div>
       <p class="small muted">The first three signs follow published soil health advice from USDA NRCS, SARE and Virginia Cooperative Extension: keep the soil covered, keep living roots in the ground, add legumes. The fourth, thirsty crops in drying months, is our own check built on NASA soil-wetness data. See "Why we believe this" below.</p>
     </section>
@@ -105,6 +116,11 @@
     <!-- Research and details -->
     <section id="research" class="step">
       <h2>Why we believe this</h2>
+      <div class="principle rusle-why">
+        <h3>RUSLE, the soil erosion equation</h3>
+        <p>USDA has used the Universal Soil Loss Equation to plan soil conservation on farms since the 1960s; the revised version (RUSLE) is in USDA Agriculture Handbook 703 (Renard and others, 1997). It says soil loss = rain erosivity (R) × soil erodibility (K) × slope (LS) × cover (C) × conservation practices (P). Rain, soil and slope are mostly fixed for a field, so cover is the main factor a farmer controls through the crop cycle.</p>
+        <p class="small muted">What we do not do: we do not compute soil loss in tons per acre. True R needs 30-minute rainfall intensity, and NASA POWER is daily. Slope length is unknown. Exact C values need crop-stage tables. So we show each factor with the real value we have, and say which are stand-ins.</p>
+      </div>
       <p>Soil can't be measured from space directly. So we look for the conditions that wear soil down and show which crop cycles reduce them. Each warning sign comes from a published soil health principle:</p>
       <div class="principles">
         <div class="principle">
@@ -149,6 +165,11 @@
       <details class="panel">
         <summary>Words we use</summary>
         <dl class="glossary">
+          <dt>Soil erosion</dt><dd>Topsoil carried off a field by rain or wind. Topsoil holds most of a field's nutrients and organic matter, and it takes many years to rebuild.</dd>
+          <dt>RUSLE</dt><dd>The Revised Universal Soil Loss Equation, USDA's formula for how much soil rain washes off a field: A = R × K × LS × C × P.</dd>
+          <dt>Rainfall erosivity (R)</dt><dd>How hard and how often rain hits the ground. A few heavy storms do more damage than many light showers.</dd>
+          <dt>Soil erodibility (K)</dt><dd>How easily a soil's particles break loose and wash away. It comes from the soil's mix of sand, silt, clay and organic matter.</dd>
+          <dt>Cover-management factor (C)</dt><dd>How well plants and residue shield the soil from rain. Living cover in rainy months lowers C, and so lowers soil loss.</dd>
           <dt>NDVI (greenness)</dt><dd>A satellite measure of how green and leafy the ground is, from about 0 (bare soil) to 1 (thick green crop).</dd>
           <dt>Evapotranspiration</dt><dd>Water that leaves a field as vapor, from the soil drying and from plants "breathing out" through their leaves.</dd>
           <dt>Soil-moisture anomaly</dt><dd>How much wetter or drier the soil is than usual for that month. Negative means drier than normal.</dd>
@@ -184,6 +205,7 @@
           <li><strong>MODIS MOD13Q1 NDVI</strong> (250 m greenness every 16 days) via the ORNL DAAC subset service: <a href="https://modis.ornl.gov/rst/api/v1/">modis.ornl.gov</a></li>
           <li><strong>USDA NRCS soil survey (SSURGO)</strong> via Soil Data Access: <a href="https://sdmdataaccess.sc.egov.usda.gov/">sdmdataaccess.sc.egov.usda.gov</a></li>
           <li><strong>USDA NASS Cropland Data Layer (CropScape)</strong> for each field's crop history, 2016–2025: <a href="https://nassgeodata.gmu.edu/CropScape/">nassgeodata.gmu.edu/CropScape</a></li>
+          <li><strong>RUSLE</strong>: Renard, K.G. and others, 1997, <em>Predicting Soil Erosion by Water: A Guide to Conservation Planning with the Revised Universal Soil Loss Equation (RUSLE)</em>, USDA Agriculture Handbook 703. Chapter record: <a href="https://www.ars.usda.gov/research/publications/publication/?seqNo115=92824">ars.usda.gov</a></li>
           <li><strong>USDA NRCS soil health principles</strong> ("reduce disturbance, maximize cover, promote biodiversity, and support living roots"): <a href="https://www.nrcs.usda.gov/conservation-basics/soil/soil-health">nrcs.usda.gov soil health</a></li>
           <li><strong>Crop traits</strong>: Virginia Cooperative Extension Agronomy Handbook and SARE <em>Managing Cover Crops Profitably</em>. Each row links to its source in <a href="data/crops.csv">data/crops.csv</a>.</li>
         </ul>
