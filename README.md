@@ -77,6 +77,7 @@ node --test tests/run.test.js
 - NDVI covers only 2021–2025 because the subset service is slow. For Henry County, the 15 images after April 23, 2025 are missing because the server kept failing; run `python3 src/fetch_ndvi.py henry_va` to fill them in (it resumes). Widen `FIRST_YEAR` in `src/fetch_ndvi.py` when there is time.
 - Planting months follow a Virginia calendar, so they may not fit Nevada. The Nevada rotations are built from crops CropScape records near the field, not from a Nevada extension guide.
 - Water-need and heat ratings for most crops are our judgment; see [docs/CROP_CHECK.md](docs/CROP_CHECK.md) for which traits each source supports.
+- Any spot in the lower 48 can be checked: type an address, use your location, or click the map. A picked spot gets NASA POWER weather and the USDA soil survey live (about 2 seconds). Satellite greenness (NDVI) and crop history are only saved for the two demo fields, because NDVI takes several minutes to download per spot. A picked spot's region (East or dry West) comes only from the 100th meridian.
 - The demo fields are real crop pixels chosen from CropScape. We don't know who farms them, and no personal information is used.
 - Yields are not modeled.
 - The rankings come from transparent, hand-written scoring rules. They are not AI-generated and are not validated predictions: they have not been tested against real farm outcomes.

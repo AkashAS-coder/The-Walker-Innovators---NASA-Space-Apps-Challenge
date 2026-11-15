@@ -6,7 +6,11 @@ For the live demo and the video. Every number below is what the app shows for th
 
 > "Soil wears out slowly, and you can't see it from the tractor. Topsoil washes off bare ground in a heavy rain. Organic matter drops when nothing is growing all winter. By the time yields fall, the damage is years old."
 
-Open the app. It loads straight onto a real crop field in Henry County, Virginia, picked from the USDA Cropland Data Layer.
+Open the app and click **Check my field**. Show how a farmer finds their own land in a few seconds: type a town (for example "Martinsville, VA") in the address box, or scroll the satellite map and click a field. The app pulls 21 years of NASA POWER weather and the USDA soil survey for that exact spot in about 2 seconds.
+
+> "Any farmer in the lower 48 can do this with their own field. No account needed."
+
+Then pick **Demo field in northern Henry County** from the field list for the full walkthrough. It's a real crop field picked from the USDA Cropland Data Layer, and it's the one with saved satellite greenness and crop history. Spots you pick get weather and soil only, and the app says so.
 
 ## 0:30 – 1:15 · Step 1: Check your soil
 
@@ -39,7 +43,7 @@ Point at the finding sentence and the three cards.
 
 > "We compare what you grow now with the two rotations that best fit this field. Sorghum, then wheat and double-crop soybean, raises cover in the heavy-rain season from 86% to 100%, clears all three warning signs under our rules, and scores 83 against 56. These scores come from written rules, not AI, and they haven't been tested on real farms yet, so it's a starting point for the extension agent."
 
-Move the **Forage** slider from 1 to 5. The forage option climbs from 69 to 72 and the others drop a little. Sorghum stays on top: "For this field, the soil fix holds up even when the farmer cares more about hay."
+The third card is wheat and double-crop soybean every year (81). Move the **Forage** slider from 1 to 5: every score shifts (sorghum 83 to 80, wheat-soybean 81 to 78, current 56 to 55), but sorghum stays on top: "For this field, the soil fix holds up even when the farmer cares more about hay."
 
 Open "Evidence, benefits, what we don't know" on one card:
 
@@ -53,4 +57,6 @@ Scroll to "Why we believe this".
 
 ## Backup if the internet is down
 
-The app reads only saved data files, so the warning signs, month strip and three cards work offline from `python3 -m http.server 8000`. The map (Leaflet) and the charts (Chart.js) load from the internet, so they will be missing offline; use the field list instead and keep a screenshot of the greenness chart ready.
+Record a full run of this script ahead of time and keep the video on the laptop and on a phone. If the Wi-Fi or a NASA service fails on stage, play the video.
+
+The demo fields read only saved data files, so the warning signs, month strip and three cards work offline from `python3 -m http.server 8000`. The map (Leaflet) and the charts (Chart.js) load from the internet, so they will be missing offline; picking your own spot needs the internet too. Use the demo field list instead and keep a screenshot of the greenness chart ready.

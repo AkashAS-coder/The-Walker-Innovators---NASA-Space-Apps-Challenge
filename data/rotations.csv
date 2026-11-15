@@ -11,3 +11,8 @@ alfalfa_grain,Alfalfa hay then corn and wheat,west,alfalfa>alfalfa;alfalfa>alfal
 alfalfa_sorghum,Alfalfa hay then sorghum and corn,west,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;grain_sorghum>cereal_rye;corn>bare,Swaps one corn year for sorghum which needs less water and adds a rye cover.
 alfalfa_forage,Shorter alfalfa stand with summer forage,west,alfalfa>alfalfa;alfalfa>alfalfa;sorghum_sudangrass>cereal_rye;corn>cereal_rye,Two years of alfalfa then summer forage and corn with rye over both winters.
 grain_no_hay,Corn and sorghum with winter wheat,west,corn>winter_wheat;grain_sorghum>cereal_rye,Grain only with no hay equipment needed. Wheat and rye cover the winters.
+corn_only,Corn every year,any,corn>bare;corn>bare,Corn every summer with the field bare over winter.
+soy_only,Soybean every year,east,soybean>bare,Full-season soybean every summer with the field bare over winter.
+corn_soy_wheat,Corn then soybean then wheat and double-crop soybean,east,corn>bare;soybean>winter_wheat;soybean_double>bare,Three-year cycle. Wheat is planted after soybean and double-crop soybean follows the wheat.
+wheat_soy_yearly,Wheat and double-crop soybean every year,east,soybean_double>winter_wheat,Winter wheat then soybean planted right after the wheat harvest every year.
+hay_field,Alfalfa hay field,any,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa,A standing alfalfa hay field cut for hay every year.

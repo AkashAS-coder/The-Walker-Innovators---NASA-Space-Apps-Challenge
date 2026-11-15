@@ -32,8 +32,9 @@ function swing(ind, key, diff, unit, toUnit = x => fmt(x, 1)) {
     : ` That is bigger than the normal year-to-year swing (±${toUnit(sd)} ${unit}).`;
 }
 
+// 'no-cache' asks the server if the file changed, so visitors never see an old crop list.
 async function getJson(path, optional = false) {
-  const res = await fetch(path);
+  const res = await fetch(path, { cache: 'no-cache' });
   if (!res.ok) {
     if (optional) return null;
     throw new Error(`Could not load ${path} (${res.status})`);
@@ -42,7 +43,7 @@ async function getJson(path, optional = false) {
 }
 
 async function getText(path) {
-  const res = await fetch(path);
+  const res = await fetch(path, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`Could not load ${path} (${res.status})`);
   return res.text();
 }
@@ -77,7 +78,8 @@ function showError(err) {
 function buildInputs() {
   $('field-select').innerHTML = state.fields
     .map(f => `<option value="${f.id}">${esc(f.name)} (${esc(f.place)})</option>`).join('');
-  $('field-select').addEventListener('change', e => selectField(e.target.value));
+  $('field-select').addEventListener('change', e =>
+    (state.picked && e.target.value === state.picked.id ? showField(state.picked) : selectField(e.target.value)));
 
   $('rotation-select').innerHTML = state.rotations
     .map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
@@ -115,16 +117,24 @@ function buildInputs() {
 
 function buildMap() {
   if (typeof L === 'undefined') { $('map').textContent = 'Map could not load (no internet?). Use the field list instead.'; return; }
-  const map = L.map('map', { scrollWheelZoom: false });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18, attribution: '© OpenStreetMap contributors',
+  // Scroll to zoom and drag to move, so a farmer can find their own fields.
+  const map = L.map('map', { scrollWheelZoom: true });
+  // Satellite photos (USGS, public domain, US only) make your own fields easy to spot.
+  // USGS has photos up to zoom 16; Leaflet enlarges them for closer zooms.
+  const satellite = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 18, maxNativeZoom: 16, attribution: 'Imagery: USGS The National Map',
   }).addTo(map);
+  const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18, attribution: '© OpenStreetMap contributors',
+  });
+  L.control.layers({ Satellite: satellite, 'Street map': streets }).addTo(map);
   const markers = state.fields.map(f =>
     L.marker([f.lat, f.lon]).addTo(map)
-      .bindTooltip(`${f.name}<br>${f.place}`)
+      .bindTooltip(`Demo field: ${f.name}<br>${f.place}`)
       .on('click', () => { $('field-select').value = f.id; selectField(f.id); }));
   state.mapBounds = L.featureGroup(markers).getBounds().pad(0.3);
   map.fitBounds(state.mapBounds);
+  map.on('click', e => pickPoint(e.latlng.lat, e.latlng.lng));
   state.map = map;
 }
 
@@ -143,6 +153,13 @@ async function selectField(id) {
       state.cache[id] = { ind: computeFieldIndicators(power, ndvi), soil, history: crops && crops.history };
     } catch (err) { showError(err); return; }
   }
+  showField(field);
+}
+
+// Fills the field page from a field that is already loaded in state.cache
+// (a demo field or a spot the farmer picked), then redraws everything.
+function showField(field) {
+  const id = field.id;
   state.field = field;
   $('field-place').textContent = `${field.place} · latitude ${field.lat}, longitude ${field.lon}`;
   $('field-note').textContent = field.note;
@@ -163,16 +180,143 @@ async function selectField(id) {
   $('history').innerHTML = history
     ? Object.entries(history).map(([yr, crop]) =>
         `<div class="yr"><b>${yr}</b><span>${esc(crop || 'missing')}</span></div>`).join('')
-    : '<p class="muted">No crop history saved for this field.</p>';
-  $('texture-hint').textContent = soil ? `USDA soil survey says: ${soil.texdesc}. Change it if your field differs.`
+    : field.picked ? '<p class="muted">Crop history is only saved for the two demo fields, not for spots you pick.</p>'
+                   : '<p class="muted">No crop history saved for this field.</p>';
+  $('texture-hint').textContent = soil && soil.texdesc ? `USDA soil survey says: ${soil.texdesc}. Change it if your field differs.`
+                       : soil ? 'The soil survey lists no texture at this exact spot. Pick your soil texture.'
                                        : 'No soil survey data saved for this field. Pick your soil texture.';
   render();
+}
+
+// ---------- finding your own field (address, my location, or a map click) ----------
+
+// Same request and years as src/fetch_power.py, so picked spots match the demo fields.
+const POWER_URL = 'https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,GWETROOT,GWETTOP&community=AG&start=20050101&end=20251231&format=JSON';
+// Same query as src/fetch_soil.py: the main soil at this point and its top layer.
+const SOIL_URL = 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
+const soilQuery = (lat, lon) => `SELECT TOP 1 mu.mukey, mu.muname, mu.farmlndcl,
+  c.compname, c.comppct_r, c.slope_r, c.drainagecl, c.hydgrp,
+  h.hzdept_r, h.hzdepb_r, h.om_r, h.awc_r, h.kwfact,
+  h.sandtotal_r, h.silttotal_r, h.claytotal_r, tg.texdesc
+FROM mapunit mu
+JOIN component c ON c.mukey = mu.mukey
+LEFT JOIN chorizon h ON h.cokey = c.cokey AND h.hzdept_r = 0
+LEFT JOIN chtexturegrp tg ON tg.chkey = h.chkey AND tg.rvindicator = 'Yes'
+WHERE mu.mukey IN (SELECT * FROM SDA_Get_Mukey_from_intersection_with_WktWgs84('point(${lon} ${lat})'))
+ORDER BY c.comppct_r DESC`;
+// A box around the lower 48 states: our crop list and the USDA soil survey cover only these.
+// A box also takes in edges of Canada and Mexico; there the soil survey simply has no record.
+const US = { south: 24.4, north: 49.5, west: -125, east: -66.9 };
+// West of the 100th meridian is the classic dry-West line (Powell, 1878; see SOURCES.md).
+const DRY_WEST_LON = -100;
+
+const findMsg = (text, isError = false) => {
+  $('find-msg').textContent = text;
+  $('find-msg').classList.toggle('err', isError);
+};
+
+async function fetchPower(lat, lon) {
+  const res = await fetch(`${POWER_URL}&latitude=${lat}&longitude=${lon}`);
+  if (!res.ok) throw new Error(`NASA POWER answered ${res.status}`);
+  return res.json();
+}
+
+// Returns the soil record, or null if the survey has nothing here (water, town, or no answer).
+async function fetchSoil(lat, lon) {
+  try {
+    const res = await fetch(SOIL_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ format: 'JSON+COLUMNNAME', query: soilQuery(lat, lon) }),
+    });
+    const table = (await res.json()).Table;
+    if (!table || table.length < 2) return null;
+    return { ...Object.fromEntries(table[0].map((name, i) => [name, table[1][i]])), source: SOIL_URL };
+  } catch (err) { return null; }
+}
+
+// Loads NASA weather and the soil survey for any spot in the lower 48, then shows it.
+// Satellite greenness is not loaded here: it takes several minutes per spot.
+async function pickPoint(rawLat, rawLon) {
+  const lat = Number(rawLat.toFixed(3)), lon = Number(rawLon.toFixed(3)); // about 100 m
+  if (lat < US.south || lat > US.north || lon < US.west || lon > US.east) {
+    findMsg('That spot is outside the lower 48 states. This tool\'s crop list and soil survey cover only those.', true);
+    return false;
+  }
+  if (state.pin) state.pin.setLatLng([lat, lon]);
+  else if (state.map) state.pin = L.circleMarker([lat, lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#a8701a', fillOpacity: 1 }).addTo(state.map);
+  const id = `pt_${lat}_${lon}`;
+  const ticket = (state.pickTicket = (state.pickTicket || 0) + 1); // ignore answers for older clicks
+  if (!state.cache[id]) {
+    findMsg('Getting 21 years of NASA weather and your soil survey…');
+    try {
+      const [power, soil] = await Promise.all([fetchPower(lat, lon), fetchSoil(lat, lon)]);
+      state.cache[id] = { ind: computeFieldIndicators(power, null), soil, history: null };
+    } catch (err) {
+      console.error('pick point', err);
+      if (ticket === state.pickTicket) findMsg('Couldn\'t reach NASA right now. Try again, or try a demo field.', true);
+      return false;
+    }
+  }
+  if (ticket !== state.pickTicket) return false;
+  const region = lon < DRY_WEST_LON ? 'west' : 'east';
+  const field = {
+    id, picked: true, name: 'Your field', place: 'Spot you picked', lat, lon, region,
+    irrigated: false, sells_forage: false,
+    default_rotation: state.rotations.find(r => r.region === region || r.region === 'any').id,
+    note: 'A spot you picked. Weather (NASA POWER) and soil (USDA soil survey) were loaded just now. ' +
+          'Satellite greenness and crop history are only saved for the two demo fields.',
+  };
+  // Show the picked spot at the top of the field list.
+  let option = $('field-select').querySelector('option[data-picked]');
+  if (!option) {
+    option = document.createElement('option');
+    option.dataset.picked = '1';
+    $('field-select').prepend(option);
+  }
+  option.value = id;
+  option.textContent = `Your field (${lat}, ${lon})`;
+  $('field-select').value = id;
+  state.picked = field;
+  showField(field);
+  findMsg(state.cache[id].soil ? 'Done. Not the right spot? Click your field on the map.'
+                               : 'Done, but the USDA soil survey has no record here (water, a town, or outside the US). Click right on your field, or pick your soil type on step 4.');
+  return true;
+}
+
+async function findAddress(text) {
+  if (!text.trim()) { findMsg('Type an address or a town first.', true); return; }
+  // OpenStreetMap's free search asks for one search at a time, so the button waits.
+  $('find-go').disabled = true;
+  findMsg('Looking up that address…');
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(text)}`);
+    const [hit] = await res.json();
+    if (!hit) { findMsg('Couldn\'t find that address. Try adding the town and state, or scroll the map instead.', true); return; }
+    if (state.map) state.map.setView([Number(hit.lat), Number(hit.lon)], 16);
+    await pickPoint(Number(hit.lat), Number(hit.lon));
+  } catch (err) {
+    findMsg('Address search is not answering right now. Scroll the map to your field instead.', true);
+  } finally {
+    setTimeout(() => { $('find-go').disabled = false; }, 1000);
+  }
+}
+
+function findMe() {
+  if (!navigator.geolocation) { findMsg('This browser cannot share your location. Type your address instead.', true); return; }
+  findMsg('Asking your browser where you are…');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      if (state.map) state.map.setView([pos.coords.latitude, pos.coords.longitude], 16);
+      pickPoint(pos.coords.latitude, pos.coords.longitude);
+    },
+    () => findMsg('Location was not shared. Type your address or scroll the map instead.', true),
+    { timeout: 15000 });
 }
 
 // The field object the scoring code needs, built from the current inputs.
 function currentField() {
   const c = state.cache[state.field.id];
-  return { id: state.field.id, region: state.field.region, ind: c.ind, soil: c.soil,
+  return { id: state.field.id, region: state.field.region, picked: !!state.field.picked, ind: c.ind, soil: c.soil,
            irrigated: $('irrigated').checked, texture: $('texture-select').value,
            sellsForage: $('sells-forage').checked };
 }
@@ -235,7 +379,9 @@ function renderReport() {
     card('Soil type', esc(soil.compname), esc(soil.muname)),
     card('Slope', `${fmt(soil.slope_r)}%`, Number(soil.slope_r) >= 7 ? 'Sloped ground: bare soil here washes away more easily.' : 'Fairly flat ground.', Number(soil.slope_r) >= 7),
     card('Drainage', esc(soil.drainagecl || 'n/a'), `Hydrologic group ${esc(soil.hydgrp || 'n/a')} (A soaks in fast, D runs off).`),
-    card('Topsoil', `${fmt(soil.om_r, 1)}% organic matter`, `Holds about ${fmt(soil.awc_r * 12, 1)} in of water per foot of soil. ${esc(soil.texdesc)}.`),
+    soil.om_r === null || soil.om_r === undefined
+      ? card('Topsoil', 'n/a', 'The soil survey has no topsoil numbers at this exact spot (often town land, a building or water). Try clicking right on the field.')
+      : card('Topsoil', `${fmt(soil.om_r, 1)}% organic matter`, `Holds about ${soil.awc_r === null ? 'n/a' : fmt(soil.awc_r * 12, 1)} in of water per foot of soil. ${esc(soil.texdesc || '')}.`),
   ].join('') : '<p class="muted">No soil survey data saved for this field.</p>';
 
   drawTrendChart();
@@ -266,7 +412,9 @@ function drawNdviChart() {
   const ndvi = state.cache[state.field.id].ind.ndvi;
   if (state.charts.ndvi) { state.charts.ndvi.destroy(); state.charts.ndvi = null; }
   if (!ndvi.available) {
-    $('ndvi-note').textContent = 'Satellite greenness data is not saved for this field yet. Run src/fetch_ndvi.py.';
+    $('ndvi-note').textContent = state.field.picked
+      ? 'Satellite greenness is not loaded for spots you pick: it takes several minutes to download. Try a demo field to see it. Bare months below come from the crop calendar.'
+      : 'Satellite greenness data is not saved for this field yet. Run src/fetch_ndvi.py.';
     return;
   }
   const years = new Set(ndvi.points.map(p => p.year));
@@ -453,7 +601,12 @@ function showPage() {
   window.scrollTo(0, 0);
   // The map and charts measure their size when drawn; tell them their page is now visible.
   // A map drawn while hidden zooms out to the whole world, so re-fit it to the fields.
-  if (state.map && id === 'field') { state.map.invalidateSize(); state.map.fitBounds(state.mapBounds); }
+  if (state.map && id === 'field') {
+    state.map.invalidateSize();
+    // Keep the farmer's own spot in view; otherwise show the two demo fields.
+    if (state.field && state.field.picked) state.map.setView([state.field.lat, state.field.lon], Math.max(state.map.getZoom(), 14));
+    else state.map.fitBounds(state.mapBounds);
+  }
   Object.values(state.charts).forEach(c => c && c.resize());
   if (id === 'myfarm') renderSaved();
   if (id === 'ask') renderHelperContext();
@@ -468,6 +621,7 @@ function saveCurrentCheck() {
     id: Date.now(),
     savedAt: new Date().toISOString(),
     fieldId: state.field.id, fieldName: state.field.name, place: state.field.place,
+    lat: state.field.lat, lon: state.field.lon, // rounded to 3 decimals; the typed address is never saved
     rotationId: $('rotation-select').value, rotationName: current.rotation.name,
     irrigated: $('irrigated').checked, texture: $('texture-select').value,
     noHay: $('no-hay').checked, sellsForage: $('sells-forage').checked,
@@ -519,8 +673,12 @@ function renderSaved() {
 async function openCheck(id) {
   const c = listChecks().find(x => x.id === id);
   if (!c || !state.field) return; // data still loading
-  $('field-select').value = c.fieldId;
-  await selectField(c.fieldId);
+  if (c.fieldId.startsWith('pt_')) {
+    if (!(await pickPoint(c.lat, c.lon))) { location.hash = 'field'; return; }
+  } else {
+    $('field-select').value = c.fieldId;
+    await selectField(c.fieldId);
+  }
   $('rotation-select').value = c.rotationId;
   $('irrigated').checked = c.irrigated;
   $('texture-select').value = c.texture;
@@ -697,7 +855,7 @@ function clearChat() {
 const HELPER_ERRORS = {
   'not-set-up': 'The AI helper is not set up on this copy of the site yet (no OpenRouter key on Netlify). Every score and explanation in the tool still works without it.',
   'no-server': 'The AI helper only runs on the live Netlify site, not on a plain local server. Every score and explanation still works here.',
-  busy: 'The free AI service is busy right now. Wait a minute and try again. Your results are unchanged.',
+  busy: 'The free AI service is busy right now. Wait a minute and try again. Everything on your results pages still works.',
   other: 'The helper could not answer right now. Try again in a moment. Your results are unchanged.',
 };
 
@@ -710,7 +868,11 @@ async function askHelper(question) {
   const answer = addMessage('bot', null);
   $('helper-send').disabled = true;
   try {
+    // Free AI models can stall; give up after 25 seconds instead of spinning forever.
+    const stop = new AbortController();
+    setTimeout(() => stop.abort(), 25000);
     const res = await fetch('/.netlify/functions/ask', {
+      signal: stop.signal,
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ results: resultsForHelper(), history: state.chat, question }),
@@ -725,6 +887,7 @@ async function askHelper(question) {
     state.chat.push({ role: 'user', content: question }, { role: 'assistant', content: data.answer });
   } catch (err) {
     console.error('AI helper', err);
+    if (err.name === 'AbortError') err.kind = 'busy';
     const row = answer.closest('.row');
     row.className = 'row err';
     row.querySelector('.who')?.remove();
@@ -769,6 +932,8 @@ $('saved-list').addEventListener('click', e => {
   if (open) openCheck(Number(open));
   if (del) { deleteCheck(Number(del)); renderSaved(); }
 });
+$('find-form').addEventListener('submit', e => { e.preventDefault(); findAddress($('find-address').value); });
+$('find-me').addEventListener('click', findMe);
 window.addEventListener('hashchange', showPage);
 showPage();
 init();

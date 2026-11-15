@@ -625,3 +625,19 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
   .chat-compose { margin-bottom: .6rem; }
   .ask-side { grid-template-columns: 1fr; }
 }
+
+/* ---------- Find my field: address search, my location, bigger map ---------- */
+.finder { margin-bottom: 1.2rem; }
+.find-row { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: .5rem; }
+.find-row input {
+  flex: 1 1 16rem; min-height: 48px; font: inherit; padding: 0 .9rem;
+  border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink);
+}
+.find-row input:focus-visible { outline: 3px solid var(--forest); outline-offset: 2px; }
+.find-msg { margin: .3rem 0 0; font-weight: 600; min-height: 1.4em; }
+.find-msg.err { color: #a4471d; }
+.map { height: 420px; cursor: crosshair; }
+@media (max-width: 560px) {
+  .find-row .btn { flex: 1 1 auto; }
+  .map { height: 340px; }
+}
