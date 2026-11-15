@@ -848,7 +848,9 @@ const SIGN_IN_ERRORS = {
   'auth/weak-password': 'Please use at least 6 characters.',
   'auth/invalid-email': 'That email address does not look right.',
   'auth/popup-closed-by-user': 'The Google window was closed before signing in.',
-  'auth/operation-not-allowed': 'This sign-in method is not turned on. Use your email and a password instead (refresh the page if you still see a Google button).',
+  'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups for this site and try again.',
+  'auth/unauthorized-domain': 'Google sign-in is not allowed on this web address yet.',
+  'auth/operation-not-allowed': 'This sign-in method is not turned on yet. Use your email and a password for now.',
 };
 // The Firebase code in brackets helps the team find the cause.
 const signInError = err => `${SIGN_IN_ERRORS[err.code] || 'Sign-in did not work.'} (${err.code || err.message})`;

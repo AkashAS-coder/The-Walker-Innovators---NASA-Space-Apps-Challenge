@@ -508,6 +508,7 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
 .account-status { font-weight: 600; margin-top: 0; }
 .account-error { color: var(--warn); margin-bottom: 0; }
 .account-error:empty { display: none; }
+.or-line { text-align: center; margin: .7rem 0 .2rem; }
 .email-form { display: grid; gap: .3rem; }
 .email-form input { font: inherit; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 8px; margin-bottom: .5rem; background: #fff; }
 .email-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .4rem; }
