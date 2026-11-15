@@ -143,3 +143,114 @@ test('RUSLE factors use the real soil-survey K and say what is missing', () => {
   const covered = sc.scoreRotation(rotations.find(x => x.id === 'corn_soy_cover'), field, even);
   assert.ok(covered.sub.erosion.score > res.sub.erosion.score);
 });
+
+test('a cycle with no main crop still gets a real water score, not NaN', () => {
+  const coverOnly = { id: 'test_cover_only', name: 'Cover only', region: 'any', description: '',
+                      years: [{ main: null, winter: crops.cereal_rye }] };
+  const r = sc.scoreRotation(coverOnly, fakeField(0), even);
+  assert.ok(Number.isFinite(r.sub.water.score), `water was ${r.sub.water.score}`);
+  assert.ok(Number.isFinite(r.total), `total was ${r.total}`);
+});
+
+test('the answer card names the risk, the best-fit option and one local check', () => {
+  const power = JSON.parse(read('data/raw/power_henry_va.json'));
+  const ndvi = JSON.parse(read('data/raw/ndvi_henry_va.json'));
+  const field = { id: 'henry_va', region: 'east', irrigated: false, texture: 'Loam',
+                  soil: JSON.parse(read('data/raw/soil_henry_va.json')), ind: ind.computeFieldIndicators(power, ndvi) };
+  const results = sc.compareRotations(rotations, 'corn_wheat_soy', field, { water: 3, soil: 4, income: 3, forage: 1, erosion: 4 });
+  const [current, ...alts] = results;
+  const a = sc.answerLines(results);
+  // The risk line is the first warning sign that is on for what the farmer grows now.
+  const firstLit = current.warnings.find(w => w.lit);
+  assert.ok(a.risk.startsWith(firstLit.label));
+  // The option line names the highest-scoring alternative and both scores.
+  const top = alts.reduce((x, y) => (y.total > x.total ? y : x));
+  assert.ok(a.option.includes(top.rotation.name) && a.option.includes(`${top.total}/100`) && a.option.includes(String(current.total)));
+  assert.strictEqual(a.check, top.explain.checkLocally[0]);
+
+  // With every slider at zero no option beats the current one, and the card says so instead of naming one.
+  const flat = sc.compareRotations(rotations, 'corn_wheat_soy', field, { water: 0, soil: 0, income: 0, forage: 0, erosion: 0 });
+  if (flat.slice(1).every(r => r.total <= flat[0].total)) {
+    assert.ok(sc.answerLines(flat).option.startsWith('What you grow now'));
+  }
+});
+
+test('gaps about this field are listed before the general limits', () => {
+  const field = fakeField(0); // no satellite data
+  const results = sc.compareRotations(rotations, 'corn_soy', field, even);
+  assert.ok(results[0].explain.unknowns[0].includes('Satellite greenness (NDVI) is missing'));
+});
+
+test('dry months are found against the usual for that calendar month', () => {
+  // Two years of June: one soaked (0.8), one dry (0.4). Usual is 0.6, so only the dry one is flagged.
+  const days = [2020, 2021].flatMap(year => Array.from({ length: 30 }, () => ({ year, month: 6, rootWet: year === 2020 ? 0.8 : 0.4 })));
+  const months = ind.dryMonthsByYear(days);
+  assert.deepStrictEqual(months.map(m => [m.year, m.dry]), [[2020, false], [2021, true]]);
+});
+
+test('the back-test counts hits, misses and extra flags', () => {
+  const dry = [
+    { year: 2020, month: 6, dry: true },   // flagged, drought on record  -> hit
+    { year: 2020, month: 7, dry: false },  // not flagged, drought        -> missed
+    { year: 2020, month: 8, dry: true },   // flagged, no drought         -> extra
+    { year: 2020, month: 9, dry: false },  // neither
+  ];
+  const weeks = [{ date: '2020-06-09', d1: 80 }, { date: '2020-07-14', d1: 50 },
+                 { date: '2020-08-11', d1: 49 }, { date: '2020-09-08', d1: 0 }];
+  const b = ind.droughtBacktest(dry, weeks);
+  assert.deepStrictEqual(b.total, { months: 4, hits: 1, missed: 1, extra: 1, neither: 1 });
+  assert.strictEqual(b.byYear[0].year, 2020);
+});
+
+test('the saved Henry County back-test adds up to every month of 2005-2025', () => {
+  const days = ind.parsePower(JSON.parse(read('data/raw/power_henry_va.json')));
+  const weeks = JSON.parse(read('data/raw/drought_henry_va.json')).weeks;
+  const t = ind.droughtBacktest(ind.dryMonthsByYear(days), weeks).total;
+  assert.strictEqual(t.months, 252);
+  assert.strictEqual(t.hits + t.missed + t.extra + t.neither, 252);
+});
+
+// The saved Henry County field, scored with the page's starting sliders.
+function henryResults() {
+  const field = { id: 'henry_va', region: 'east', irrigated: false, texture: 'Loam',
+                  soil: JSON.parse(read('data/raw/soil_henry_va.json')),
+                  ind: ind.computeFieldIndicators(JSON.parse(read('data/raw/power_henry_va.json')), JSON.parse(read('data/raw/ndvi_henry_va.json'))) };
+  return { field, results: sc.compareRotations(rotations, 'corn_wheat_soy', field, { water: 3, soil: 4, income: 3, forage: 1, erosion: 4 }) };
+}
+
+test('the year-by-year plan calendar agrees with the averaged cover for every crop cycle', () => {
+  for (const r of rotations) {
+    const calendar = sc.planCalendar(r);
+    sc.coverageByMonth(r).forEach((cover, k) => {
+      const share = calendar.filter(year => year[k]).length / calendar.length;
+      assert.ok(Math.abs(share - cover) < 1e-9, `${r.id} month ${k + 1}`);
+    });
+  }
+});
+
+test('plan steps walk through each crop, report bare gaps and end with a summary', () => {
+  const { field, results } = henryResults();
+  const [current] = results;
+  const steps = sc.planSteps(current, current, field);
+  // Corn then wheat and double-crop soybean: a bare gap, corn, wheat, soybean, a bare gap, the summary.
+  assert.deepStrictEqual(steps.map(s => s.kind), ['bare', 'crop', 'crop', 'crop', 'bare', 'summary']);
+  assert.ok(steps[0].title.startsWith('Bare ground: Jan'));
+  // Every month of every year is in exactly one step.
+  const cells = steps.flatMap(s => s.cells.map(c => `${c.year}-${c.month}`));
+  assert.strictEqual(cells.length, 24);
+  assert.strictEqual(new Set(cells).size, 24);
+  // Winter wheat is planted in year 1 and its step carries on into year 2.
+  const wheat = steps.find(s => s.title.startsWith('Winter wheat'));
+  assert.ok(wheat.cells.some(c => c.year === 1) && wheat.cells.some(c => c.year === 2));
+});
+
+test('a plan that covers every month has no bare step and its summary matches the comparison', () => {
+  const { field, results } = henryResults();
+  const [current, ...alts] = results;
+  const full = alts.find(r => r.bareMonths.length === 0);
+  const steps = sc.planSteps(full, current, field);
+  assert.ok(steps.every(s => s.kind !== 'bare'));
+  const summary = steps[steps.length - 1].notes.join(' ');
+  assert.ok(summary.includes(`clears ${full.fixes.length} of the`));
+  assert.ok(summary.includes(`${full.total}/100`));
+});

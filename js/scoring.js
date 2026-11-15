@@ -138,7 +138,10 @@ const dayOfMid = m => [15, 46, 74, 105, 135, 166, 196, 227, 258, 288, 319, 349][
 // ---------- the five sub-scores ----------
 
 function scoreWater(rotation, field) {
-  const mains = rotation.years.map(y => y.main).filter(Boolean);
+  // Normally the main crops; a cycle with no main crop is judged on whatever it does grow.
+  const mainCrops = rotation.years.map(y => y.main).filter(Boolean);
+  const mains = mainCrops.length ? mainCrops : allCrops(rotation);
+  if (!mains.length) return { score: 100, reasons: ['No crop in this cycle, so no crop water need.'] };
   const avgNeed = mains.reduce((s, c) => s + c.water, 0) / mains.length;
   let score = (3 - avgNeed) / 2 * 100;
   const reasons = [`Main crops have ${LEVEL_WORD[Math.round(avgNeed)]} average water need (crop table).`];
@@ -185,10 +188,10 @@ function scoreErosion(rotation, field, cover) {
   const total = weights.reduce((a, b) => a + b, 0);
   const protectedShare = cover.reduce((s, c, i) => s + c * weights[i], 0) / total;
   const reasons = [`Soil is covered in ${round(protectedShare * 100)}% of the time that matters, weighted by when heavy rain falls (NASA POWER).`];
-  const exposed = field.ind.monthly.filter((m, i) => cover[i] < 1 && m.extremeRainPerYear > 0.05)
+  const exposed = field.ind.monthly.filter((m, i) => cover[i] < 1 && m.extremeRainPerYear > RULES.HEAVY_RAIN_MONTH)
                                    .map(m => m.name);
   if (exposed.length) reasons.push(`Bare in some years during heavy-rain months: ${exposed.join(', ')}.`);
-  if (field.soil && Number(field.soil.slope_r) >= 7) {
+  if (field.soil && Number(field.soil.slope_r) >= RULES.STEEP_SLOPE_PCT) {
     reasons.push(`Your soil sits on about ${field.soil.slope_r}% slope (USDA soil survey), so cover matters more.`);
   }
   return { score: clamp(protectedShare * 100), reasons };
@@ -298,7 +301,7 @@ function vulnerableMonths(result, field) {
     const growing = result.cover[i] > 0;
     if (growing && m.heatDaysPerYear >= 3) flags.push('heat');
     if (growing && m.wetAnomaly !== null && m.wetAnomaly < THRESHOLDS.DRY_SOIL_ANOMALY) flags.push('dry soil');
-    if (result.cover[i] < 1 && m.extremeRainPerYear > 0.05) flags.push('bare in heavy rain');
+    if (result.cover[i] < 1 && m.extremeRainPerYear > RULES.HEAVY_RAIN_MONTH) flags.push('bare in heavy rain');
     if (result.cover[i] < 1 && field.ind.ndvi.available && field.ind.ndvi.byMonth[i].bare) flags.push('bare (satellite)');
     return { month: m.name, flags };
   });
@@ -346,13 +349,17 @@ function buildExplanation(result, current, field, weights) {
   }
   if (!benefits.length) benefits.push('Similar to your current rotation on most measures.');
 
-  const unknowns = [
+  // Gaps about this field come first, then the limits that hold for every field.
+  // The page shows the first three and tucks the rest behind "show all".
+  const unknowns = [];
+  const general = [
     'Crop trait ratings are our reading of extension sources and have not been checked by an agronomist yet.',
+    'Yields under your soil and weather are not modeled.',
     'Local prices and markets were not checked, so income is counted in harvests, not dollars.',
     'NASA POWER weather is for a grid cell about 50 km wide, not your exact field.',
   ];
   if (field.ind.ndvi.available) {
-    unknowns.push('A MODIS pixel is 250 m wide and may include land next to your field.');
+    general.push('A MODIS pixel is 250 m wide and may include land next to your field.');
     // MOD13Q1 makes 23 images a year (one per 16 days). Say so if some were never saved.
     const pts = field.ind.ndvi.points;
     const expected = 23 * new Set(pts.map(p => p.year)).size;
@@ -376,7 +383,7 @@ function buildExplanation(result, current, field, weights) {
     unknowns.push('This field was picked on the map, so its region (East or dry West) comes only from which side of the 100th meridian it sits on.');
   }
   if (field.ind.missingDays) unknowns.push(`${field.ind.missingDays} days of weather data were missing and were skipped.`);
-  unknowns.push('Yields under your soil and weather are not modeled.');
+  unknowns.push(...general);
 
   const checkLocally = [...result.frostRisks];
   if (allCrops(r).some(c => c.role === 'cover')) checkLocally.push('When to end the cover crop before planting, and whether any herbicide you use limits cover crop choices.');
@@ -534,9 +541,144 @@ function compareRotations(rotations, currentId, field, weights, constraints = {}
   });
 }
 
+// The three lines of the "Your answer" card, built only from results already worked out above:
+// the biggest risk with what the farmer grows now, the option that fits their priorities best,
+// and the first thing to check locally. results: what compareRotations returns.
+function answerLines(results) {
+  const [current, ...alts] = results;
+  const lit = current.warnings.filter(w => w.lit);
+  const risk = lit.length
+    ? `${lit[0].label}. ${lit[0].reason}`
+    : 'None of our four soil warning signs is on for what you grow now.';
+  const top = alts.length ? alts.reduce((a, b) => (b.total > a.total ? b : a)) : null;
+  if (!top || top.total <= current.total) {
+    return {
+      risk,
+      option: `What you grow now (${current.total}/100) already fits your priorities as well as any option we checked. Moving the sliders may change that.`,
+      check: current.explain.checkLocally[0],
+    };
+  }
+  const label = id => current.warnings.find(w => w.id === id).label.toLowerCase();
+  const clears = lit.length && top.fixes.length
+    ? ` Under our rules it clears ${top.fixes.length} of the ${lit.length} warning sign${lit.length === 1 ? '' : 's'} that ${lit.length === 1 ? 'is' : 'are'} on now.` : '';
+  const adds = top.adds.length ? ` It would turn on a new one: ${top.adds.map(label).join(', ')}.` : '';
+  return {
+    risk,
+    option: `“${top.rotation.name}” scores ${top.total}/100 for your priorities, against ${current.total} for what you grow now.${clears}${adds}`,
+    check: top.explain.checkLocally[0],
+  };
+}
+
+// ---------- the plan walkthrough (My farm > Open plan) ----------
+
+// Which crop holds the ground in each month of each year of a cycle, or null for bare.
+// Same rules as coverageByMonth, but kept year by year instead of averaged.
+function planCalendar(rotation) {
+  const years = rotation.years;
+  return years.map((y, i) => {
+    const prev = years[(i - 1 + years.length) % years.length];
+    return MONTHS.map((_, k) => {
+      const m = k + 1;
+      if (y.main && (y.main.season === 'perennial' || y.main.start <= y.main.end) && inWindow(y.main, m)) return y.main;
+      if (y.winter && m >= y.winter.start && inWindow(y.winter, m)) return y.winter;
+      if (prev.winter && prev.winter.start > prev.winter.end && m <= prev.winter.end) return prev.winter;
+      return null;
+    });
+  });
+}
+
+const ROLE_NOTE = {
+  cash: 'A crop to harvest and sell.',
+  cover: 'A cover crop: grown to protect and feed the soil, not to sell.',
+  forage: 'A hay or forage crop.',
+};
+
+// The steps of the walkthrough for one option: what goes in the ground, in order, year by year,
+// what that means for the soil on this field, the bare gaps, and a closing step.
+// result and current come from compareRotations. Returns
+// [{ year, kind: 'crop' | 'bare' | 'summary', title, cells: [{ year, month }], notes: [text] }].
+// Only uses facts already in the crop table and the field's NASA and soil data. No yields, prices or dates.
+function planSteps(result, current, field) {
+  const r = result.rotation;
+  const calendar = planCalendar(r);
+  const monthly = field.ind.monthly;
+  const names = cells => [...new Set(cells.map(c => c.month))].sort((a, b) => a - b).map(m => MONTHS[m - 1]).join(', ');
+  const heavy = c => monthly[c.month - 1].extremeRainPerYear > RULES.HEAVY_RAIN_MONTH;
+  const dry = c => monthly[c.month - 1].wetAnomaly !== null && monthly[c.month - 1].wetAnomaly < THRESHOLDS.DRY_SOIL_ANOMALY;
+  const span = cells => (cells.length === 1 ? MONTHS[cells[0].month - 1]
+    : `${MONTHS[cells[0].month - 1]} to ${MONTHS[cells[cells.length - 1].month - 1]}`);
+  const steps = [];
+
+  calendar.forEach((months, i) => {
+    const year = i + 1;
+    const yearSteps = [];
+    // One step for each crop that starts its run in this year (a winter crop that carries
+    // into the next year keeps its later months in the same step).
+    const crops = [...new Set(months.filter(Boolean))];
+    for (const crop of crops) {
+      const first = months.indexOf(crop);
+      // Skip the tail of last year's winter crop: it belongs to the step where it was planted.
+      const carriedIn = first === 0 && crop.start > crop.end && calendar[(i - 1 + calendar.length) % calendar.length][11] === crop
+                        && !(r.years[i].winter === crop && months.lastIndexOf(crop) >= crop.start - 1 && months[0] !== crop);
+      const cells = [];
+      months.forEach((c, k) => { if (c === crop && !(carriedIn && k + 1 <= crop.end)) cells.push({ year, month: k + 1 }); });
+      if (r.years[i].winter === crop && crop.start > crop.end) {
+        const next = (i + 1) % calendar.length;
+        calendar[next].forEach((c, k) => { if (c === crop && k + 1 <= crop.end) cells.push({ year: next + 1, month: k + 1 }); });
+      }
+      if (!cells.length) continue;
+      const notes = [ROLE_NOTE[crop.role]].filter(Boolean);
+      if (crop.fixesN) notes.push('It is a legume, so it puts some nitrogen back into the soil.');
+      const rainy = cells.filter(heavy);
+      if (rainy.length) notes.push(`It covers the ground in ${names(rainy)}, when days with over 2 in (50 mm) of rain usually happen.`);
+      const thirsty = cells.filter(dry);
+      if (crop.water === 3 && !field.irrigated && thirsty.length) {
+        notes.push(`It needs a lot of water, and root-zone soil was drier than usual in ${names(thirsty)} in ${THRESHOLDS.RECENT_YEARS.join('–')}.`);
+      }
+      notes.push(...result.frostRisks.filter(t => t.startsWith(crop.name)));
+      yearSteps.push({ year, kind: 'crop', first: cells[0].month, title: `${crop.name}: ${span(cells)}`, cells, notes });
+    }
+    const bare = [];
+    months.forEach((c, k) => { if (!c) bare.push({ year, month: k + 1 }); });
+    if (bare.length) {
+      const notes = [];
+      const rainy = bare.filter(heavy);
+      notes.push(rainy.length
+        ? `Heavy rain usually falls in ${names(rainy)}, with nothing growing to hold the soil.`
+        : 'No heavy-rain month falls in this gap.');
+      if (field.ind.ndvi.available) {
+        const seen = bare.filter(c => field.ind.ndvi.byMonth[c.month - 1].bare);
+        if (seen.length) notes.push(`Satellites also saw little plant cover on this spot in ${names(seen)}.`);
+      }
+      notes.push('No living roots feed the soil in these months.');
+      yearSteps.push({ year, kind: 'bare', first: bare[0].month, title: `Bare ground: ${names(bare)}`, cells: bare, notes });
+    }
+    yearSteps.sort((a, b) => a.first - b.first);
+    steps.push(...yearSteps.map(({ first, ...step }) => step));
+  });
+
+  const lit = current.warnings.filter(w => w.lit).length;
+  const label = id => current.warnings.find(w => w.id === id).label.toLowerCase();
+  const signs = result.isCurrent
+    ? `${lit} of ${current.warnings.length} soil warning signs are on.`
+    : !lit ? 'No soil warning sign was on to begin with.'
+      : `Under our rules it clears ${result.fixes.length} of the ${lit} warning sign${lit === 1 ? '' : 's'} on now` +
+        (result.fixes.length ? ` (${result.fixes.map(label).join(', ')}).` : '.');
+  const summary = [
+    `Soil is covered for ${round(result.sub.erosion.score)}% of the heavy-rain season` +
+      (result.isCurrent ? '.' : `, against ${round(current.sub.erosion.score)}% with what you grow now.`),
+    signs,
+  ];
+  if (result.adds.length) summary.push(`It would turn on a new warning sign: ${result.adds.map(label).join(', ')}.`);
+  summary.push(`It scores ${result.total}/100 for the priorities you set.`);
+  summary.push(`Check locally first: ${result.explain.checkLocally[0]}`);
+  steps.push({ year: null, kind: 'summary', title: 'What this plan adds up to', cells: [], notes: summary });
+  return steps;
+}
+
 // In the browser dayToDateLabel comes from indicators.js; in Node we load it.
 if (typeof module !== 'undefined') {
   ({ dayToDateLabel, THRESHOLDS } = require('./indicators.js'));
   module.exports = { LEVEL, PRIORITIES, RULES, SOIL_TEXTURES, parseCsv, parseCrops, parseRotations, inWindow,
-    coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths, soilWarnings, erosionFactors };
+    coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths, soilWarnings, erosionFactors, answerLines, planCalendar, planSteps };
 }

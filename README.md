@@ -18,13 +18,13 @@ python3 -m http.server 8000
 
 Then open http://localhost:8000.
 
-To publish it, turn on GitHub Pages for the `main` branch (Settings → Pages). It is a plain static site, so there is no build step.
+To publish it, deploy the repo to Netlify (the crop-history and Ask AI functions in `netlify/functions/` only run there). It is a plain static site, so there is no build step.
 
-After changing any file in `js/` or `css/`, change the `?v=` number on the `<script>` and stylesheet links at the bottom and top of `index.html`. GitHub Pages lets browsers keep old files for 10 minutes, and a new page with old JavaScript can leave buttons doing nothing.
+After changing any file in `js/` or `css/`, change the `?v=` number on the `<script>` and stylesheet links at the bottom and top of `index.html`. Browsers can keep old files for a while, and a new page with old JavaScript can leave buttons doing nothing.
 
 ## What it does
 
-1. **Check your soil**: pick your field on a map or from a list (Henry County, VA, and a second region near Fallon, NV) and what you grow now. The four warning signs light up for your current rotation, with the NASA or USDA number behind each one.
+1. **Check your soil**: find your field by address, by your location, or with a click on the map (demo mode adds two sample fields with saved data: Henry County, VA, and near Fallon, NV) and what you grow now. The four warning signs light up for your current rotation, with the NASA or USDA number behind each one.
 2. **See the cycle**: a month-by-month strip of your current rotation (bare months, heavy-rain months, crops at risk) next to the MODIS greenness chart that shows when satellites saw the field bare.
 3. **Compare fixes**: five priority sliders and three rotation cards. Each card leads with how many warning signs it fixes (and any new one it adds), then the fit score, sub-scores and the five explanation boxes.
 4. **Why we believe this**: the soil health principle behind each warning sign, plus the full NASA POWER weather cards, soil survey, glossary, scoring rules and sources.
@@ -44,7 +44,7 @@ Other data: USDA NRCS SSURGO soil survey (Soil Data Access), USDA NASS Cropland 
 fetch scripts (run by hand) → data/raw/*.json → js/indicators.js → js/scoring.js → js/app.js → page
 ```
 
-- `src/fetch_power.py`, `src/fetch_ndvi.py`, `src/fetch_soil.py`, `src/fetch_cropscape.py` download data and save it to `data/raw/`. They use only the Python standard library. **The website never calls an API**, so the demo works even if a NASA server is down.
+- `src/fetch_power.py`, `src/fetch_ndvi.py`, `src/fetch_soil.py`, `src/fetch_cropscape.py`, `src/fetch_drought.py` download data and save it to `data/raw/`. They use only the Python standard library. **The two demo fields load only from these saved files**, so the demo works even if a NASA server is down. A field the farmer picks on the map is different: the page asks NASA POWER, the USDA soil survey, the MODIS service and CropScape for that spot live.
 - `js/indicators.js` turns the daily data into indicators. All thresholds are named at the top of the file.
 - `js/scoring.js` scores each rotation with simple written rules. There is no machine learning and no AI in the scoring, and every score carries the reasons behind it.
 - `js/app.js` draws the page.
@@ -77,7 +77,8 @@ node --test tests/run.test.js
 - NDVI covers only 2021–2025 because the subset service is slow. For Henry County, the 15 images after April 23, 2025 are missing because the server kept failing; run `python3 src/fetch_ndvi.py henry_va` to fill them in (it resumes). Widen `FIRST_YEAR` in `src/fetch_ndvi.py` when there is time.
 - Planting months follow a Virginia calendar, so they may not fit Nevada. The Nevada rotations are built from crops CropScape records near the field, not from a Nevada extension guide.
 - Water-need and heat ratings for most crops are our judgment; see [docs/CROP_CHECK.md](docs/CROP_CHECK.md) for which traits each source supports.
-- A farmer adds their own named fields anywhere in the lower 48 (address, their location, or a map click); fields are kept in this browser. Each field gets NASA POWER weather and the USDA soil survey live (about 2 seconds), then crop history (CropScape, through a Netlify Function, so only on the live Netlify site) and two years of MODIS greenness (a minute or two) in the background. If a service does not answer, that part is shown as missing. A field's region (East or dry West) comes only from the 100th meridian.
+- A farmer adds their own named fields anywhere in the lower 48 (address, their location, or a map click); fields are kept in this browser. Each field gets NASA POWER weather and the USDA soil survey live (about 2 seconds), then crop history (CropScape, through a Netlify Function, so only on the live Netlify site) and two years of MODIS greenness (a minute or two) in the background. If a service does not answer, that part is shown as missing. The worked-out numbers for each field (a few KB, not the raw NASA file) are kept in the browser, so a return visit shows the field without asking NASA again.
+- The farmer picks one of the three crop cycles and saves it. On My farm, "Open plan" plays that plan back year by year, one step at a time, using only the crop table and the field's NASA, MODIS and soil data. A field's region (East or dry West) comes only from the 100th meridian.
 - The two sample fields (Henry County VA, Fallon NV) appear only in demo mode, turned on at the bottom of the page.
 - The demo fields are real crop pixels chosen from CropScape. We don't know who farms them, and no personal information is used.
 - Yields are not modeled.

@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Field Shift: Soil Erosion Check</title>
-  <meta name="description" content="Is your field's topsoil washing away? A free soil check built on 20 years of NASA Earth data, with three crop cycles compared side by side. Built by The Walker Innovators for the NASA Space Apps Challenge 2026.">
+  <meta name="description" content="Is your field's topsoil washing away? A free soil check built on 21 years of NASA Earth data, with three crop cycles compared side by side. Built by The Walker Innovators for the NASA Space Apps Challenge 2026.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%228%22 fill=%22%235b3a21%22/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/style.css?v=20261114-15">
+  <link rel="stylesheet" href="css/style.css?v=20261114-24">
 </head>
 <body>
   <!-- Top navigation: one link per page. app.js shows one page at a time from the #hash. -->
@@ -21,9 +21,10 @@
         <a href="#home" data-nav="home">Home</a>
         <a href="#how" data-nav="how">How it works</a>
         <a href="#field" data-nav="field soil year compare">Check my field</a>
-        <a href="#myfarm" data-nav="myfarm">My farm</a>
+        <a href="#myfarm" data-nav="myfarm plan">My farm</a>
         <a href="#ask" data-nav="ask">Ask AI</a>
         <a href="#science" data-nav="science">The science</a>
+        <a href="#proof" data-nav="proof">Proof</a>
       </div>
       <!-- Outside the menu so Sign in shows on phones too -->
       <div class="nav-actions">
@@ -33,7 +34,7 @@
     </div>
   </nav>
 
-  <p id="loading" class="loading wrap">Loading saved NASA data…</p>
+  <p id="loading" class="loading wrap">Loading your field…</p>
   <p id="load-error" class="error wrap" hidden></p>
 
   <main>
@@ -46,6 +47,7 @@
           <p class="hero-lead">See how well your field is covered when heavy rain hits, then compare crop cycles that hold more soil in place.</p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#field">Check my field</a>
+            <button type="button" class="btn btn-ghost show-example">See an example Virginia field</button>
             <a class="btn btn-ghost" href="#how">How it works</a>
           </div>
         </div>
@@ -123,7 +125,7 @@
         <li>
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 10 5-10 5L2 7l10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
           <h3>See your soil check</h3>
-          <p>Four warning signs from 20 years of NASA data.</p>
+          <p>Four warning signs from 21 years of NASA data.</p>
         </li>
         <li>
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>
@@ -273,6 +275,7 @@
           <button class="btn btn-ghost" type="button" id="find-me">Use my location</button>
         </form>
         <p class="small muted">Or scroll the map and click your field. We don't save your address.</p>
+        <p class="small">Just looking? <button type="button" class="link-btn show-example">See an example Virginia field</button> with saved NASA data.</p>
         <p id="find-msg" class="find-msg" role="status" aria-live="polite"></p>
       </div>
 
@@ -374,7 +377,7 @@
       <header class="page-head">
         <h2>Compare three crop cycles</h2>
       </header>
-      <p id="finding" class="finding" aria-live="polite"></p>
+      <section id="finding" class="finding answer" aria-live="polite" aria-label="Your answer"></section>
 
       <div class="priorities panel-card">
         <h3>What matters to you</h3>
@@ -398,15 +401,86 @@
       <p class="small muted scores-note"><strong>Scores (0–100)</strong> come from written rules, not AI, and are untested on real farms. Use them to start a talk with your extension agent.</p>
       <div id="options" class="options"></div>
 
+      <div class="step-nav">
+        <a class="btn btn-ghost" href="#year">Back</a>
+        <button type="button" class="btn btn-primary" id="save-check">Save my choice to My farm</button>
+      </div>
+      <p id="save-msg" class="small save-msg" aria-live="polite"></p>
+    </section>
+
+    <!-- ========== YOUR PLAN: a saved plan played back year by year (opened from My farm) ========== -->
+    <section class="page wrap" data-page="plan" hidden>
+      <header class="page-head">
+        <p class="plan-eyebrow">Your plan, year by year</p>
+        <h2 id="plan-title"></h2>
+        <p id="plan-sub"></p>
+      </header>
+      <p id="plan-note" class="demo-banner" hidden></p>
+
+      <div class="panel-card plan-board">
+        <div id="plan-years"></div>
+        <p id="plan-now" class="plan-now" aria-hidden="true"></p>
+        <p class="small muted plan-key"><span class="key covered"></span> crop growing <span class="key bare"></span> bare ground <span class="key todo"></span> not shown yet</p>
+        <div class="plan-controls">
+          <button type="button" class="btn btn-ghost" id="plan-back">Back</button>
+          <button type="button" class="btn btn-primary" id="plan-play">Pause</button>
+          <button type="button" class="btn btn-ghost" id="plan-next">Next</button>
+          <button type="button" class="btn btn-ghost" id="plan-all">Show everything</button>
+          <span id="plan-count" class="plan-count" role="status"></span>
+        </div>
+      </div>
+
+      <ol id="plan-steps" class="plan-steps" aria-live="polite"></ol>
+
+      <p class="small muted">Months come from the planting and harvest months in our crop table (a Virginia calendar). Rain, frost and soil wetness come from NASA POWER; plant cover from MODIS. This page does not give planting dates, seeding rates, yields or prices, because we have no sourced numbers for them.</p>
       <div class="notice" role="note">
         <strong>This tool supports your decision. It does not replace your judgment or your local extension agent.</strong>
       </div>
-
       <div class="step-nav">
-        <a class="btn btn-ghost" href="#year">Back</a>
-        <button type="button" class="btn btn-primary" id="save-check">Save to My farm</button>
+        <a class="btn btn-ghost" href="#myfarm">Back to My farm</a>
+        <a class="btn btn-ghost" href="#proof">See the proof and the limits</a>
       </div>
-      <p id="save-msg" class="small save-msg" aria-live="polite"></p>
+    </section>
+
+    <!-- ========== PROOF: the problem in numbers, a back-test, the survey, the limits ========== -->
+    <section class="page wrap" data-page="proof" hidden>
+      <header class="page-head">
+        <h2>Does it hold up?</h2>
+        <p>Four honest checks on this tool, using the saved data for our home field in Henry County, Virginia.</p>
+      </header>
+
+      <h3>1. The problem, in numbers</h3>
+      <p>Every number below comes straight from a saved NASA or USDA file for the Henry County field. None are estimates.</p>
+      <div id="proof-numbers" class="cards"><p class="muted">Loading the saved data…</p></div>
+
+      <h3>2. A back-test against an outside record</h3>
+      <p>We can't measure erosion from space, so we tested the one part of the tool we can check: the <strong>dry-soil flag</strong>. For every month from 2005 to 2025 we asked two questions and compared the answers.</p>
+      <ul>
+        <li><strong>Our flag:</strong> NASA POWER root-zone soil wetness for that month was at least 2 points (out of 100) below the usual for that calendar month.</li>
+        <li><strong>The outside record:</strong> at least one weekly U.S. Drought Monitor map that month put half or more of Henry County in moderate drought or worse.</li>
+      </ul>
+      <div id="proof-backtest"><p class="muted">Loading the saved data…</p></div>
+      <p class="small muted">The U.S. Drought Monitor is made by the National Drought Mitigation Center, USDA and NOAA. It is not a NASA product; we use it only as an independent check. This test is one county, and it checks the dry-soil flag only, not the erosion warning or the scores.</p>
+
+      <h3>3. Who we asked</h3>
+      <p>We surveyed <strong>16 Virginia growers in November 2026</strong>, mostly small growers and gardeners. The answers are anonymous and we use totals only.</p>
+      <ul>
+        <li>13 of 16 lost crops in the last two years. The top causes were drought (10) and heat (10).</li>
+        <li>5 of 16 don't trust readings from farm technology, which is why every number here shows its source and every option has a "what we don't know" box.</li>
+        <li>5 of 16 learn about new tools from the extension office, which is why every result says to take it to your extension agent.</li>
+      </ul>
+      <p class="small muted">What this does not show: the survey is small, it asked about weather losses and not about erosion or crop rotation, and nobody was asked whether they want this tool. Connecting their losses to soil cover is our own reasoning, not something growers told us.</p>
+
+      <h3>4. What we have not proven</h3>
+      <ul>
+        <li>The 0–100 scores and the ranking of crop cycles have not been tested on real farms.</li>
+        <li>The crop table is our reading of extension guides and has not been checked by an agronomist yet.</li>
+        <li>The lines we draw (what counts as heavy rain, low cover or dry soil) are team starting points, listed with their reasons on <a href="#science">The science</a> page.</li>
+        <li>We do not calculate how much soil a field loses. The warning signs point to risk; they are not measurements.</li>
+      </ul>
+      <div class="notice" role="note">
+        <strong>This tool supports your decision. It does not replace your judgment or your local extension agent.</strong>
+      </div>
     </section>
 
     <!-- ========== ASK AI (optional helper, js/cloud.js) ========== -->
@@ -638,14 +712,15 @@
     <p class="small muted dialog-foot">What we store: your email (kept by Firebase Authentication) and the soil checks you choose to save. Nothing else. Only you can read your checks.</p>
   </dialog>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <!-- defer: the page shows first, then these run in the order written -->
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <!-- ?v= makes browsers fetch fresh files after each update. Change it whenever you change any js or css file. -->
-  <script src="js/indicators.js?v=20261114-15"></script>
-  <script src="js/scoring.js?v=20261114-15"></script>
-  <script src="js/storage.js?v=20261114-15"></script>
-  <script src="js/firebase-config.js?v=20261114-15"></script>
-  <script type="module" src="js/cloud.js?v=20261114-15"></script>
-  <script src="js/app.js?v=20261114-15"></script>
+  <script defer src="js/indicators.js?v=20261114-24"></script>
+  <script defer src="js/scoring.js?v=20261114-24"></script>
+  <script defer src="js/storage.js?v=20261114-24"></script>
+  <script defer src="js/firebase-config.js?v=20261114-24"></script>
+  <script type="module" src="js/cloud.js?v=20261114-24"></script>
+  <script defer src="js/app.js?v=20261114-24"></script>
 </body>
 </html>

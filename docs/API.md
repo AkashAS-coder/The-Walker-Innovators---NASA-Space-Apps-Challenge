@@ -2,7 +2,7 @@
 
 This tool has two kinds of "API":
 
-1. **External data APIs** that our fetch scripts call by hand to download data. The website never calls these itself.
+1. **External data APIs** that our fetch scripts call by hand to download data. For the two demo fields the website reads the saved files and never calls these. For a field the farmer picks on the map, the page calls the same services live with the same requests.
 2. **Internal API**: the saved data files the website reads, and the JavaScript functions that turn them into indicators and scores.
 
 ```

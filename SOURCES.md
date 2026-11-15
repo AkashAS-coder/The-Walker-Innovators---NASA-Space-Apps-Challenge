@@ -24,7 +24,8 @@ Every dataset, web page and library used in this project.
 | Renard, K.G. and others (1997), *Predicting Soil Erosion by Water: A Guide to Conservation Planning with the Revised Universal Soil Loss Equation (RUSLE)*, USDA Agriculture Handbook 703 | The RUSLE equation (A = R × K × LS × C × P) the page is built around; which factors we have and which we do not | https://www.ars.usda.gov/research/publications/publication/?seqNo115=92824 (chapter record, R factor) |
 | USDA NRCS, "Soil Health" page: "reduce disturbance, maximize cover, promote biodiversity, and support living roots" | The basis for the four soil warning signs and the "Why we believe this" section | https://www.nrcs.usda.gov/conservation-basics/soil/soil-health |
 | NASA Earth Observatory, "Measuring Vegetation (NDVI & EVI)" | NDVI meaning and the bare-ground threshold | https://earthobservatory.nasa.gov/features/MeasuringVegetation |
-| CRESS grower survey (team's own, 16 anonymous responses, Nov 2026) | Problem statement only (slides). Not in the repo. | — |
+| U.S. Drought Monitor, county statistics for Henry County, VA (FIPS 51089), weekly, 2005–2025. Made by the National Drought Mitigation Center (University of Nebraska-Lincoln), USDA and NOAA; not a NASA product | Proof page only: an outside record to back-test our NASA-based dry-soil flag against. Saved to data/raw/drought_henry_va.json by src/fetch_drought.py | https://droughtmonitor.unl.edu/ · data service: https://usdmdataservices.unl.edu/api/CountyStatistics/GetDroughtSeverityStatisticsByAreaPercent |
+| CRESS grower survey (team's own, 16 anonymous responses, Nov 2026) | Problem statement (slides) and the "Who we asked" block on the Proof page, totals only. The responses are not in the repo. | — |
 
 ## Photos
 

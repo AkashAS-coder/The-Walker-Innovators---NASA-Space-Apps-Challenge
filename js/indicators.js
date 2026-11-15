@@ -33,6 +33,10 @@ const THRESHOLDS = {
   SEASON_END_MONTH: 9,
   // Heat days are counted in summer: June to August.
   SUMMER_MONTHS: [6, 7, 8],
+  // Back-test only (Proof page): a month counts as a "drought month" when at least one weekly
+  // U.S. Drought Monitor map in it put this share of the county or more in moderate drought
+  // (class D1) or worse. Team starting point; D1 is the first class the Monitor calls drought.
+  DROUGHT_AREA_PCT: 50,
   // "Early" and "recent" windows used to describe change over time.
   EARLY_YEARS: [2005, 2009],
   RECENT_YEARS: [2021, 2025],
@@ -208,14 +212,16 @@ function ndviByMonth(points) {
   return months;
 }
 
-// Number of 16-day NDVI images per year that were below the bare threshold, as weeks.
+// Number of 16-day NDVI images per year that were below the low-cover line, as weeks.
+// Uses the same line as ndviByMonth, so the yearly and monthly counts agree.
 function bareWeeksByYear(points) {
+  const line = ndviByMonth(points).line;
   const byYear = {};
   for (const p of points) {
     byYear[p.year] = byYear[p.year] || { year: p.year, bareImages: 0, images: 0, peak: 0 };
     byYear[p.year].images++;
     byYear[p.year].peak = Math.max(byYear[p.year].peak, p.ndvi);
-    if (p.ndvi < THRESHOLDS.BARE_NDVI) byYear[p.year].bareImages++;
+    if (p.ndvi < line) byYear[p.year].bareImages++;
   }
   // Each MOD13Q1 image stands for a 16-day window, so one image is about 2.3 weeks.
   return Object.values(byYear).map(y => ({ ...y, bareWeeks: Math.round(y.bareImages * 16 / 7) }));
@@ -223,10 +229,61 @@ function bareWeeksByYear(points) {
 
 // ---------- everything for one field ----------
 
+// The satellite-greenness part of a field's indicators. Kept separate so the page can
+// add it later, when the slow satellite service answers, without redoing the weather math.
+function ndviIndicators(ndviJson) {
+  const points = parseNdvi(ndviJson);
+  return {
+    available: points.length > 0,
+    points,
+    byMonth: ndviByMonth(points),
+    byYear: bareWeeksByYear(points),
+  };
+}
+
+// ---------- back-test for the Proof page ----------
+
+// For every month of every year: was root-zone soil drier than usual for that calendar month?
+// "Usual" is the average of that month across all years. Uses the same DRY_SOIL_ANOMALY line
+// as the rest of the tool. Returns [{ year, month, anomaly, dry }]; a month with no data is skipped.
+function dryMonthsByYear(days) {
+  const out = [];
+  for (let m = 1; m <= 12; m++) {
+    const inMonth = days.filter(d => d.month === m);
+    const usual = mean(inMonth.map(d => d.rootWet));
+    for (const year of [...new Set(inMonth.map(d => d.year))].sort()) {
+      const wet = mean(inMonth.filter(d => d.year === year).map(d => d.rootWet));
+      if (wet === null || usual === null) continue;
+      out.push({ year, month: m, anomaly: wet - usual, dry: wet - usual < THRESHOLDS.DRY_SOIL_ANOMALY });
+    }
+  }
+  return out.sort((a, b) => a.year - b.year || a.month - b.month);
+}
+
+// Compares our dry-soil months with the U.S. Drought Monitor's record for the same county.
+// weeks: [{ date: 'YYYY-MM-DD', d1: percent of county in moderate drought or worse }].
+// Per year and in total: months both saw (hits), drought months we did not flag (missed),
+// months we flagged with no drought on record (extra), and months with neither.
+function droughtBacktest(dryMonths, weeks) {
+  const droughtMonths = new Set(weeks.filter(w => w.d1 >= THRESHOLDS.DROUGHT_AREA_PCT).map(w => w.date.slice(0, 7)));
+  const key = m => `${m.year}-${String(m.month).padStart(2, '0')}`;
+  const count = list => ({
+    months: list.length,
+    hits: list.filter(m => m.dry && droughtMonths.has(key(m))).length,
+    missed: list.filter(m => !m.dry && droughtMonths.has(key(m))).length,
+    extra: list.filter(m => m.dry && !droughtMonths.has(key(m))).length,
+    neither: list.filter(m => !m.dry && !droughtMonths.has(key(m))).length,
+  });
+  const years = [...new Set(dryMonths.map(m => m.year))];
+  return {
+    total: count(dryMonths),
+    byYear: years.map(year => ({ year, ...count(dryMonths.filter(m => m.year === year)) })),
+  };
+}
+
 function computeFieldIndicators(powerJson, ndviJson) {
   const days = parsePower(powerJson);
   const yearly = yearlyIndicators(days);
-  const ndviPoints = parseNdvi(ndviJson);
   return {
     firstYear: yearly[0].year,
     lastYear: yearly[yearly.length - 1].year,
@@ -240,12 +297,7 @@ function computeFieldIndicators(powerJson, ndviJson) {
     drySpell: change(yearly, 'longestDrySpell'),
     extremeRain: change(yearly, 'extremeRainDays'),
     missingDays: yearly.reduce((s, y) => s + y.missingDays, 0),
-    ndvi: {
-      available: ndviPoints.length > 0,
-      points: ndviPoints,
-      byMonth: ndviByMonth(ndviPoints),
-      byYear: bareWeeksByYear(ndviPoints),
-    },
+    ndvi: ndviIndicators(ndviJson),
   };
 }
 
@@ -253,5 +305,5 @@ function computeFieldIndicators(powerJson, ndviJson) {
 if (typeof module !== 'undefined') {
   module.exports = { THRESHOLDS, MONTH_NAMES, mean, median, stdev, dayToDateLabel, parsePower,
     longestDryRun, yearlyIndicators, change, monthlyProfile, parseNdvi, ndviByMonth,
-    bareWeeksByYear, computeFieldIndicators };
+    bareWeeksByYear, ndviIndicators, dryMonthsByYear, droughtBacktest, computeFieldIndicators };
 }

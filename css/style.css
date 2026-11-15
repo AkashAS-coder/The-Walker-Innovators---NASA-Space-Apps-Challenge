@@ -678,3 +678,82 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
 }
 .bottom .demo-toggle { color: #efe4d2; border-color: #efe4d2; }
 .bottom .demo-toggle:hover { background: rgba(255, 255, 255, .1); }
+
+/* A button that looks like a link, for small in-sentence actions ("See an example Virginia field") */
+.link-btn { background: none; border: 0; padding: 0; font: inherit; color: var(--soil-dark); text-decoration: underline; cursor: pointer; }
+.link-btn:hover { color: var(--soil); }
+.link-btn:focus-visible { outline: 2px solid var(--soil); outline-offset: 2px; }
+
+/* "Your answer" card on Compare: three short lines, each with a small title */
+.answer { padding: 1.1rem 1.2rem 1rem; font-size: 1rem; }
+.answer-for { margin: 0 0 .6rem; font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--green); }
+.answer-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+.answer-lines li { display: grid; grid-template-columns: 11rem 1fr; gap: .2rem 1rem; align-items: baseline; }
+.answer-lines .k { font-weight: 700; }
+.answer-lines .v { font-size: 1.05rem; line-height: 1.5; }
+.answer-note { margin: .9rem 0 0; padding-top: .7rem; border-top: 1px solid rgba(47, 107, 58, .25); font-size: .92rem; font-weight: 600; }
+@media (max-width: 640px) { .answer-lines li { grid-template-columns: 1fr; } }
+
+/* Slim option cards: the details open below the "why" box */
+.detail-head { margin: .9rem 0 .3rem; font-size: .95rem; }
+details.show-all > summary { min-height: 36px; font-size: .9rem; font-weight: 600; color: var(--warn); }
+details.show-all ul { margin-top: .2rem; }
+
+/* "What is ...?" one-sentence meanings next to a technical word */
+details.define { margin-top: .4rem; }
+details.define > summary { min-height: 32px; font-size: .88rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+details.define p { margin: .2rem 0 0; font-size: .9rem; }
+
+/* Proof page */
+[data-page="proof"] h3 { margin: 2rem 0 .5rem; }
+.table-scroll { overflow-x: auto; }
+.proof-table { border-collapse: collapse; width: 100%; font-size: .95rem; font-variant-numeric: tabular-nums; }
+.proof-table th, .proof-table td { padding: .45rem .7rem; border-bottom: 1px solid var(--line); text-align: right; }
+.proof-table th:first-child { text-align: left; }
+.proof-table thead th { font-size: .85rem; }
+.answer-trail { margin: .8rem 0 0; font-size: .88rem; }
+
+/* Compare: the farmer's pick among the three options */
+.option .choose { align-self: flex-start; }
+.option.chosen { box-shadow: 0 0 0 3px var(--green-soft); }
+
+/* Your plan page: year strips that fill in step by step */
+.plan-eyebrow { margin: 0 0 .3rem; font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--green); }
+.plan-board { display: grid; gap: .8rem; }
+.plan-year { margin-bottom: .7rem; }
+.plan-year-name { margin: 0 0 .3rem; font-weight: 700; }
+.plan-year .month { min-height: 3.4rem; transition: background-color 300ms ease, opacity 300ms ease; }
+.plan-year .month .what { display: block; font-size: .68rem; line-height: 1.15; margin-top: .15rem; overflow-wrap: anywhere; }
+.plan-year .month.todo { background: #ece7dc; opacity: .55; }
+.plan-year .month.bare { background: var(--brown-soft); }
+.plan-year .month.bare .what { color: var(--warn); font-weight: 600; }
+.plan-year .month.now { outline: 2px solid var(--soil-dark); outline-offset: -2px; }
+.plan-key .key { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin: 0 .25rem 0 .6rem; vertical-align: -1px; }
+.plan-key .key:first-child { margin-left: 0; }
+.plan-key .key.covered { background: var(--green-soft); border: 1px solid var(--green); }
+.plan-key .key.bare { background: var(--brown-soft); border: 1px solid var(--brown); }
+.plan-key .key.todo { background: #ece7dc; border: 1px solid var(--line); }
+.plan-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.plan-controls .btn { min-height: 44px; }
+.plan-controls .btn:disabled { opacity: .45; cursor: default; }
+.plan-count { margin-left: auto; font-weight: 600; }
+.plan-steps { list-style: none; margin: 1rem 0; padding: 0; display: grid; gap: .7rem; }
+.plan-step { border: 1px solid var(--line); border-left: 5px solid var(--green); border-radius: var(--radius); padding: .8rem 1rem; background: #fcfbf8; animation: plan-step-in 300ms ease both; }
+.plan-step.bare { border-left-color: var(--warn); }
+.plan-step.summary { border-left-color: var(--soil-dark); background: var(--green-soft); }
+.plan-step.now { box-shadow: 0 0 0 2px var(--soil-dark); }
+.plan-step h3 { margin: 0 0 .3rem; font-size: 1.1rem; }
+.plan-step ul { margin: 0; padding-left: 1.1rem; }
+.plan-step li { margin: .2rem 0; }
+.plan-step-when { margin: 0 0 .15rem; font-size: .8rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+@keyframes plan-step-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .plan-step { animation: none; }
+  .plan-year .month { transition: none; }
+}
+@media (max-width: 640px) {
+  .plan-year .month .what { display: none; }
+  .plan-count { margin-left: 0; width: 100%; }
+}
+
+.plan-now { margin: 0; padding: .7rem .9rem; border-radius: 8px; background: var(--green-soft); min-height: 3.2rem; }

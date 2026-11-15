@@ -52,9 +52,12 @@ async function getText(path) {
 
 async function init() {
   try {
-    state.fields = await getJson('data/fields.json');
-    state.crops = parseCrops(parseCsv(await getText('data/crops.csv')));
-    state.rotations = parseRotations(parseCsv(await getText('data/rotations.csv')), state.crops);
+    // Ask for the three small files at the same time instead of one after another.
+    const [fields, cropsCsv, rotationsCsv] = await Promise.all([
+      getJson('data/fields.json'), getText('data/crops.csv'), getText('data/rotations.csv')]);
+    state.fields = fields;
+    state.crops = parseCrops(parseCsv(cropsCsv));
+    state.rotations = parseRotations(parseCsv(rotationsCsv), state.crops);
   } catch (err) {
     showError(err);
     return;
@@ -68,14 +71,16 @@ async function init() {
   state.ready = true;
   $('loading').hidden = true;
   showPage();
+  if (state.exampleWanted) showExample(); // the example button was clicked while this was loading
 }
 
 function showError(err) {
   $('loading').hidden = true;
   const box = $('load-error');
   box.hidden = false;
-  box.textContent = `${err.message}. If you opened index.html straight from your computer, run ` +
-    '"python3 -m http.server 8000" in the project folder and open http://localhost:8000 instead.';
+  box.textContent = 'The page could not load its data. Check your internet connection and reload the page.';
+  // For the team: opening index.html straight from disk fails; run "python3 -m http.server 8000" instead.
+  console.error('Load failed', err);
 }
 
 // ---------- inputs ----------
@@ -173,15 +178,17 @@ function showHistory() {
     ? Object.entries(c.history).map(([yr, crop]) =>
         `<div class="yr"><b>${yr}</b><span>${esc(crop || 'missing')}</span></div>`).join('')
     : state.field.picked && !c.historyState ? '<p class="muted">Loading crop history…</p>'
-    : '<p class="muted">Crop history could not be loaded for this spot (it loads on the live site only).</p>';
+    : '<p class="muted">Crop history could not be loaded for this spot right now.</p>';
 }
+
+const placeLine = field => `${field.place} · latitude ${field.lat}, longitude ${field.lon}`;
 
 // Fills the field page from a field that is already loaded in state.cache
 // (a demo field or a spot the farmer picked), then redraws everything.
 function showField(field) {
   const id = field.id;
   state.field = field;
-  $('field-place').textContent = `${field.place} · latitude ${field.lat}, longitude ${field.lon}`;
+  $('field-place').textContent = placeLine(field);
   $('field-note').textContent = field.note;
   // Only offer rotations meant for this field's region (no soybean in the Nevada desert).
   $('rotation-select').innerHTML = state.rotations
@@ -230,27 +237,36 @@ const findMsg = (text, isError = false) => {
   $('find-msg').classList.toggle('err', isError);
 };
 
+// Gives up on a service that has not answered after this long, so the page never waits forever.
+const FETCH_TIMEOUT_MS = 20000;
+async function fetchWithTimeout(url, options = {}) {
+  const stop = new AbortController();
+  const timer = setTimeout(() => stop.abort(), FETCH_TIMEOUT_MS);
+  try { return await fetch(url, { ...options, signal: stop.signal }); }
+  finally { clearTimeout(timer); }
+}
+
 async function fetchPower(lat, lon) {
-  const res = await fetch(`${POWER_URL}&latitude=${lat}&longitude=${lon}`);
+  const res = await fetchWithTimeout(`${POWER_URL}&latitude=${lat}&longitude=${lon}`);
   if (!res.ok) throw new Error(`NASA POWER answered ${res.status}`);
   return res.json();
 }
 
 // Returns the soil record, or null if the survey has nothing here (water, town, or no answer).
+// state.soilNoAnswer tells the two apart, so the message on screen is honest.
 async function fetchSoil(lat, lon) {
+  state.soilNoAnswer = false;
   try {
-    const res = await fetch(SOIL_URL, {
+    const res = await fetchWithTimeout(SOIL_URL, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ format: 'JSON+COLUMNNAME', query: soilQuery(lat, lon) }),
     });
     const table = (await res.json()).Table;
     if (!table || table.length < 2) return null;
     return { ...Object.fromEntries(table[0].map((name, i) => [name, table[1][i]])), source: SOIL_URL };
-  } catch (err) { return null; }
+  } catch (err) { state.soilNoAnswer = true; return null; }
 }
 
-// Loads NASA weather and the soil survey for any spot in the lower 48, then shows it.
-// Satellite greenness is not loaded here: it takes several minutes per spot.
 // MODIS greenness (MOD13Q1) for a picked spot: the last two full years, one image every 16 days.
 // The ORNL service sends at most 10 images per request and each takes about 40 seconds,
 // so the requests run side by side in the background while the farmer reads the rest.
@@ -275,7 +291,9 @@ async function fetchNdvi(lat, lon) {
     scale = Number(part.scale) || scale;
     for (const item of part.subset || []) values[item.calendar_date] = item.data[0];
   }
-  return Object.keys(values).length ? { values, scale, fill_value: -3000, source: MODIS_URL } : null;
+  // complete: every request answered. Only a complete set is kept for the next visit.
+  return Object.keys(values).length
+    ? { values, scale, fill_value: -3000, source: MODIS_URL, complete: parts.every(Boolean) } : null;
 }
 
 // Crop history from USDA CropScape, through our Netlify Function (CropScape blocks web pages).
@@ -300,15 +318,27 @@ async function pickPoint(rawLat, rawLon, name) {
   else if (state.map) state.pin = L.circleMarker([lat, lon], { radius: 9, color: '#fff', weight: 3, fillColor: '#a8701a', fillOpacity: 1 }).addTo(state.map);
   const id = `pt_${lat}_${lon}`;
   const ticket = (state.pickTicket = (state.pickTicket || 0) + 1); // ignore answers for older clicks
+  // A field looked up before in this browser shows at once from its saved numbers.
+  const saved = state.cache[id] ? null : loadFieldData(id);
+  if (saved) {
+    state.cache[id] = { ind: { ...saved.ind, ndvi: ndviIndicators(saved.ndvi) }, soil: saved.soil,
+                        history: saved.history, ndviRaw: saved.ndvi, ndviState: saved.ndvi ? 'done' : 'loading' };
+    loadExtras(id, lat, lon); // only asks for the parts that are still missing
+  }
   if (!state.cache[id]) {
     findMsg('Getting 21 years of NASA weather and your soil survey…');
     try {
       const [power, soil] = await Promise.all([fetchPower(lat, lon), fetchSoil(lat, lon)]);
-      state.cache[id] = { power, ind: computeFieldIndicators(power, null), soil, history: null, ndviState: 'loading' };
+      state.cache[id] = { ind: computeFieldIndicators(power, null), soil, soilNoAnswer: state.soilNoAnswer,
+                          history: null, ndviState: 'loading' };
+      rememberField(id);
       loadExtras(id, lat, lon);
     } catch (err) {
       console.error('pick point', err);
-      if (ticket === state.pickTicket) findMsg('Couldn\'t reach NASA right now. Try again in a minute.', true);
+      if (ticket === state.pickTicket) {
+        findMsg(err.name === 'AbortError' ? 'NASA\'s weather service is slow right now. Try again in a minute.'
+                                          : 'Couldn\'t reach NASA right now. Try again in a minute.', true);
+      }
       return false;
     }
   }
@@ -340,23 +370,39 @@ async function pickPoint(rawLat, rawLon, name) {
   showField(field);
   fillFieldSelect();
   findMsg(state.cache[id].soil ? 'Done. Not the right spot? Click your field on the map to move it.'
+          : state.cache[id].soilNoAnswer ? 'Done, but the USDA soil survey did not answer in time. Pick your soil type on step 4, or try this field again later.'
                                : 'Done, but the USDA soil survey has no record here (water, a town, or outside the US). Click right on your field, or pick your soil type on step 4.');
   return true;
 }
 
 // Background loads for a picked spot. When each one arrives, redraw if that field is on screen.
 async function loadExtras(id, lat, lon) {
-  const onScreen = () => state.field && state.field.id === id;
-  fetchHistory(lat, lon).then(history => {
-    state.cache[id].history = history;
-    state.cache[id].historyState = history ? 'done' : 'failed';
-    if (onScreen()) showHistory();
-  });
-  const ndvi = await fetchNdvi(lat, lon);
   const c = state.cache[id];
+  const onScreen = () => state.field && state.field.id === id;
+  if (!c.history) {
+    fetchHistory(lat, lon).then(history => {
+      c.history = history;
+      c.historyState = history ? 'done' : 'failed';
+      if (history) rememberField(id);
+      if (onScreen()) showHistory();
+    });
+  }
+  if (c.ndviRaw) return; // satellite greenness was saved on an earlier visit
+  const ndvi = await fetchNdvi(lat, lon);
   c.ndviState = ndvi ? 'done' : 'failed';
-  if (ndvi) c.ind = computeFieldIndicators(c.power, ndvi);
+  if (ndvi) { c.ndviRaw = ndvi; c.ind.ndvi = ndviIndicators(ndvi); }
+  rememberField(id);
   if (onScreen()) render();
+}
+
+// Keeps a picked field's worked-out numbers in this browser (js/storage.js) for the next visit.
+// A field with no soil record is not kept, so the soil survey is asked again next time.
+function rememberField(id) {
+  const c = state.cache[id];
+  if (!c.soil) return;
+  const { ndvi, ...weather } = c.ind; // the satellite part is rebuilt from the saved images
+  saveFieldData(id, { ind: weather, soil: c.soil, history: c.history,
+                      ndvi: c.ndviRaw && c.ndviRaw.complete ? c.ndviRaw : null });
 }
 
 // ---------- My fields: the farmer's own named fields (kept in this browser) ----------
@@ -394,6 +440,9 @@ function renameField(text) {
   saveFields(state.myFields);
   const option = $('field-select').querySelector(`option[value="${mine.id}"]`);
   if (option) option.textContent = mine.name;
+  // The name also shows under the field list, on the answer card and on the Ask AI page.
+  $('field-place').textContent = placeLine(state.field);
+  if (state.results) { $('finding').innerHTML = answerCard(state.results); renderHelperContext(); }
 }
 
 function removeField() {
@@ -401,6 +450,7 @@ function removeField() {
   if (!confirm(`Remove "${state.field.name}" from your fields? Saved checks stay on My farm.`)) return;
   state.myFields = state.myFields.filter(f => f.id !== state.field.id);
   saveFields(state.myFields);
+  saveFieldData(state.field.id, null);
   state.field = null;
   if (state.myFields.length) pickPoint(state.myFields[0].lat, state.myFields[0].lon);
   else startAdding();
@@ -408,19 +458,28 @@ function removeField() {
 
 // ---------- Demo mode: two sample fields with saved data, for judges and first-time visitors ----------
 
-function setDemo(on) {
+// page: where to land after turning it on ('field', or 'compare' to go straight to the answer).
+function setDemo(on, page = 'field') {
   state.demo = on;
   $('demo-toggle').textContent = on ? 'Turn off demo mode' : 'Try demo mode (sample fields)';
   $('demo-banner').hidden = !on;
   if (state.map && state.demoLayer) on ? state.demoLayer.addTo(state.map) : state.demoLayer.remove();
   if (on) {
     stopAdding();
-    selectField(state.fields[0].id).then(() => { fillFieldSelect(); location.hash = 'field'; showPage(); });
+    selectField(state.fields[0].id).then(() => { fillFieldSelect(); location.hash = page; showPage(); });
   } else {
     if (state.field && !state.field.picked) state.field = null;
     if (state.myFields.length) pickPoint(state.myFields[0].lat, state.myFields[0].lon);
     else startAdding();
   }
+}
+
+// One click for a first-time visitor or a judge: the saved Henry County, Virginia field,
+// straight to its answer, with no waiting on any outside service.
+function showExample() {
+  if (!state.ready) { state.exampleWanted = true; return; }
+  state.exampleWanted = false;
+  setDemo(true, 'compare');
 }
 
 async function findAddress(text) {
@@ -474,9 +533,19 @@ function render() {
   renderOptions();
 }
 
-function card(label, value, meaning, alert = false) {
+// One-sentence meanings for the technical words, shown right where the word first appears.
+// Same wording as the "Words we use" list on the science page.
+const TERMS = {
+  'frost risk': 'Frost risk is the chance of a night at or below freezing (32 °F, 0 °C) while a frost-sensitive crop is in the ground.',
+  'soil-moisture anomaly': 'A soil-moisture anomaly is how much wetter or drier the soil is than usual for that month. Negative means drier than normal.',
+  NDVI: 'NDVI is a satellite measure of how green and leafy the ground is, from about 0 (bare soil) to 1 (thick green crop).',
+};
+// A small "What is ...?" line that opens to show the meaning.
+const define = word => `<details class="define"><summary>What is ${esc(word)}?</summary><p>${esc(TERMS[word])}</p></details>`;
+
+function card(label, value, meaning, alert = false, word = null) {
   return `<div class="card${alert ? ' alert' : ''}"><p class="label">${label}</p>
-    <p class="value">${value}</p><p class="meaning">${meaning}</p></div>`;
+    <p class="value">${value}</p><p class="meaning">${meaning}</p>${word ? define(word) : ''}</div>`;
 }
 
 function renderReport() {
@@ -496,7 +565,7 @@ function renderReport() {
       `${signed(ind.frostFree.diff)} day(s) compared with ${early}.` + swing(ind, 'frostFreeDays', ind.frostFree.diff, 'days', x => fmt(x)) +
       ' More days can leave room for a cover crop or a second crop.'),
     card('Frost risk dates', `${dayToDateLabel(ind.medianLastSpringFrost)} → ${dayToDateLabel(ind.medianFirstFallFrost)}`,
-      'Usual last spring frost and first fall frost, at or below 32 °F (0 °C) (middle year of 21). Frost-sensitive crops should sit between them.', true),
+      'Usual last spring frost and first fall frost, at or below 32 °F (0 °C) (middle year of 21). Frost-sensitive crops should sit between them.', true, 'frost risk'),
     card('Hot summer days', `${fmt(ind.heat.recent)} / year`,
       `Days above 90 °F (32 °C) in June–August. ${signed(ind.heat.diff)} compared with ${early}.` +
       swing(ind, 'heatDays', ind.heat.diff, 'days', x => fmt(x)), ind.heat.recent >= 20),
@@ -512,7 +581,7 @@ function renderReport() {
     card('Summer soil-moisture anomaly', `${signed(summerAnom, 1)} points`,
       (drySummer.length ? `Root-zone soil was drier than usual in ${drySummer.map(m => m.name).join(', ')} in ${recent}.`
                         : `Root-zone soil was as wet as or wetter than usual in summer in ${recent}.`) +
-      ' Wetness runs 0 (dry) to 100 (soaked); this is recent June–August minus the 21-year average.', drySummer.length > 0),
+      ' Wetness runs 0 (dry) to 100 (soaked); this is recent June–August minus the 21-year average.', drySummer.length > 0, 'soil-moisture anomaly'),
   ].join('');
 
   $('soil-card').innerHTML = soil ? [
@@ -556,7 +625,7 @@ function drawNdviChart() {
     $('ndvi-note').textContent = st === 'loading'
       ? 'Loading satellite greenness for this spot (a minute or two). This page updates by itself.'
       : st === 'failed' ? 'The satellite greenness service did not answer. Bare months come from the crop calendar instead.'
-      : 'Satellite greenness data is not saved for this field yet. Run src/fetch_ndvi.py.';
+      : 'Satellite greenness is not available for this field yet. Bare months come from the crop calendar instead.';
     return;
   }
   const years = new Set(ndvi.points.map(p => p.year));
@@ -602,19 +671,30 @@ function list(items) {
   return `<ul>${items.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
 }
 
+// "What we don't know" shows this many items first; the rest sit behind "Show all".
+const UNKNOWNS_SHOWN = 3;
+
 function renderOptions() {
   const field = currentField();
   const results = compareRotations(state.rotations, $('rotation-select').value, field, weights(),
                                    { noHay: $('no-hay').checked });
   state.results = results; // kept so "Save to My farm" saves exactly what is on screen
-  // Results changed, so the AI helper starts a fresh chat with the new numbers next time.
-  if (state.chat && state.chat.length) addChatNote('Your results changed. The helper will use the new numbers from here on.');
-  state.chat = [];
+  // Results changed. The chat stays; each question sends the newest numbers. Say so once.
+  const lastInChat = $('helper-log').lastElementChild;
+  if (state.chat.length && !(lastInChat && lastInChat.classList.contains('chat-note'))) {
+    addChatNote('Your results changed. The helper will use the new numbers from here on.');
+  }
   renderHelperContext();
   const best = Math.max(...results.slice(1).map(r => r.total));
+  // The farmer's pick starts on the best fit and follows it until they choose one themselves.
+  const bestFit = results.slice(1).find(r => r.total === best) || results[0];
+  if (!state.chosenByFarmer || !results.some(r => r.rotation.id === state.chosenId)) {
+    state.chosenId = bestFit.rotation.id;
+    state.chosenByFarmer = false;
+  }
 
   $('risk-strip').innerHTML = monthStrip(results[0], true);
-  $('finding').innerHTML = findingSentence(results);
+  $('finding').innerHTML = answerCard(results);
   renderSoilCheck(results[0]);
 
   const fewNote = results.length < 3
@@ -636,26 +716,44 @@ function renderOptions() {
       <p class="cover-line">Cover in the heavy-rain season (RUSLE C): <strong>${Math.round(r.sub.erosion.score)}%</strong>${r.isCurrent ? '' : ` <span class="muted">(now ${Math.round(results[0].sub.erosion.score)}%)</span>`}</p>
       <p class="fixes">${fixLine}</p>
       ${addLine}
-      <ul class="mini-signs">${r.warnings.map(w =>
-        `<li class="${w.lit ? 'on' : 'off'}"><span class="dot" aria-hidden="true"></span>${esc(w.label)}: ${w.lit ? 'warning' : 'OK'}</li>`).join('')}</ul>
-      <div>
-        <p class="small muted" style="margin:.2rem 0">Months with a crop growing (green) vs bare (tan) · bare months: ${r.bareMonths.length || 'none'}</p>
-        <div class="month-strip">${monthStrip(r, false)}</div>
-      </div>
       <div class="fit"><span class="big">${r.total}</span><span class="muted">/ 100 fit for your priorities</span></div>
-      <div class="bars">${Object.entries(PRIORITIES).map(([k, name]) => `
-        <div class="bar"><span>${name}</span><span class="track"><span class="fill" style="width:${Math.round(r.sub[k].score)}%; display:block"></span></span><span>${Math.round(r.sub[k].score)}</span></div>`).join('')}
-      </div>
       <div class="box why"><h4>Why suggested</h4>${list(r.explain.why)}</div>
+      <button type="button" class="btn choose" data-choose="${r.rotation.id}" data-label="${r.isCurrent ? 'Keep what I grow now' : 'Choose this plan'}"></button>
       <details class="evidence-more">
-        <summary>Evidence, benefits, what we don't know (${r.explain.unknowns.length}), what to check locally</summary>
+        <summary>Evidence, benefits, what we don't know, what to check</summary>
         <div class="box evidence"><h4>Evidence</h4>${list(r.explain.evidence)}</div>
         <div class="box benefits"><h4>Benefits</h4>${list(r.explain.benefits)}</div>
-        <div class="box unknowns"><h4>What we don't know</h4>${list(r.explain.unknowns)}</div>
+        <div class="box unknowns"><h4>What we don't know</h4>${list(r.explain.unknowns.slice(0, UNKNOWNS_SHOWN))}
+          ${r.explain.unknowns.length > UNKNOWNS_SHOWN ? `<details class="show-all">
+            <summary>Show all ${r.explain.unknowns.length}</summary>${list(r.explain.unknowns.slice(UNKNOWNS_SHOWN))}</details>` : ''}
+        </div>
         <div class="box check"><h4>Check locally</h4>${list(r.explain.checkLocally)}</div>
+        <h4 class="detail-head">The four soil warning signs</h4>
+        <ul class="mini-signs">${r.warnings.map(w =>
+          `<li class="${w.lit ? 'on' : 'off'}"><span class="dot" aria-hidden="true"></span>${esc(w.label)}: ${w.lit ? 'warning' : 'OK'}</li>`).join('')}</ul>
+        <h4 class="detail-head">Month by month</h4>
+        <p class="small muted" style="margin:0">Crop growing (green) or bare (tan) · bare months: ${r.bareMonths.length || 'none'}</p>
+        <div class="month-strip">${monthStrip(r, false)}</div>
+        <h4 class="detail-head">Score for each priority</h4>
+        <div class="bars">${Object.entries(PRIORITIES).map(([k, name]) => `
+          <div class="bar"><span>${name}</span><span class="track"><span class="fill" style="width:${Math.round(r.sub[k].score)}%; display:block"></span></span><span>${Math.round(r.sub[k].score)}</span></div>`).join('')}
+        </div>
       </details>
     </article>`;
   }).join('');
+  markChoice();
+}
+
+// Shows which of the three options the farmer has picked to save as their plan.
+function markChoice() {
+  document.querySelectorAll('#options .choose').forEach(b => {
+    const on = b.dataset.choose === state.chosenId;
+    b.textContent = on ? 'Your choice' : b.dataset.label;
+    b.setAttribute('aria-pressed', String(on));
+    b.classList.toggle('btn-primary', on);
+    b.classList.toggle('btn-ghost', !on);
+    b.closest('.option').classList.toggle('chosen', on);
+  });
 }
 
 // The hero: one headline sentence and four warning-sign tiles for what the farmer grows now.
@@ -677,7 +775,7 @@ function renderSoilCheck(current) {
   const factors = erosionFactors(current, currentField());
   const cover = factors.find(f => f.id === 'C');
   $('headline').innerHTML = `<p class="big-line">With what you grow now, your soil is covered for <strong>${cover.value.replace(' covered', '')}</strong> of the heavy-rain season.</p>` +
-    (satellite ? `<p>${satellite}</p>` : '') +
+    (satellite ? `<p>${satellite}</p>${define('NDVI')}` : '') +
     `<p>${lit} of 4 soil warning sign${lit === 1 ? ' is' : 's are'} on (below).</p>`;
   const statusWord = { measured: 'From data', partial: 'Stand-in', unknown: 'Unknown' };
   $('rusle-factors').innerHTML = factors.map(f => `
@@ -699,32 +797,27 @@ function renderSoilCheck(current) {
     </div>`).join('');
 }
 
-// One plain sentence at the top: which option fits best and the biggest reasons why.
-function findingSentence(results) {
-  const [current, ...alts] = results;
-  if (!alts.length) return '';
-  const top = alts.reduce((a, b) => (b.total > a.total ? b : a));
-  const field = state.field;
-  const litNow = current.warnings.filter(x => x.lit).length;
-  const fixes = litNow && top.fixes.length
-    ? ` Under our rules it clears ${top.fixes.length} of the ${litNow} soil warning sign${litNow === 1 ? '' : 's'} on your field.` : '';
-  if (top.total <= current.total) {
-    return `<strong>For ${esc(field.place)}:</strong> what you grow now (${current.total}/100) already fits your priorities ` +
-           `as well as any option we checked. Moving the sliders may change that.`;
-  }
-  const w = weights();
-  const gains = Object.keys(PRIORITIES)
-    .map(k => ({ k, d: top.sub[k].score - current.sub[k].score, wd: w[k] * (top.sub[k].score - current.sub[k].score) }))
-    .filter(g => g.d > 0 && w[g.k] > 0).sort((a, b) => b.wd - a.wd).slice(0, 2);
-  const why = gains.length ? `, mostly from ${gains.map(g => `${PRIORITIES[g.k].toLowerCase()} (+${Math.round(g.d)})`).join(' and ')}` : '';
-  return `<strong>For ${esc(field.place)}:</strong> “${esc(top.rotation.name)}” scores ${top.total}/100 against ` +
-         `${current.total} for what you grow now${why}.${fixes} Take it to your extension agent before changing anything.`;
+// The "Your answer" card at the top of Compare: three short lines (the words come from
+// answerLines in scoring.js) and the reminder that the farmer and local experts decide.
+function answerCard(results) {
+  const a = answerLines(results);
+  const line = (title, words) => `<li><span class="k">${title}</span><span class="v">${esc(words)}</span></li>`;
+  // A sample field is labeled as one, so nobody takes it for their own land.
+  const whose = state.field.picked ? 'Your answer for' : 'Example field:';
+  return `<p class="answer-for">${whose} ${esc(state.field.place)}</p>
+    <ol class="answer-lines">
+      ${line('Biggest risk now', a.risk)}
+      ${line('Option worth a look', a.option)}
+      ${line('Check locally first', a.check)}
+    </ol>
+    <p class="answer-trail">Worked out from NASA POWER rain and soil wetness, MODIS satellite greenness, the USDA soil survey and our crop table. <a href="#proof">See the proof and the limits</a>.</p>
+    <p class="answer-note">This supports your decision. It does not replace your judgment or your local extension agent.</p>`;
 }
 
 // ---------- pages ----------
 // The site is one HTML file with several <section class="page">. The #hash in the address
 // (#home, #field, #compare...) picks which one shows, so Back buttons and bookmarks work.
-const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'science', 'ask'];
+const PAGES = ['home', 'how', 'field', 'soil', 'year', 'compare', 'myfarm', 'plan', 'science', 'proof', 'ask'];
 const STEPS = ['field', 'soil', 'year', 'compare'];
 
 function showPage() {
@@ -737,6 +830,9 @@ function showPage() {
     id = 'field';
     findMsg('Add your field first.', true);
   }
+  // The plan page needs a plan opened from My farm (a reload forgets it). Leaving it stops the playing.
+  if (id === 'plan' && !state.plan) { history.replaceState(null, '', '#myfarm'); id = 'myfarm'; }
+  if (id !== 'plan' && state.plan) playPlan(false);
   document.querySelectorAll('.page').forEach(p => { p.hidden = p.dataset.page !== id; });
   document.querySelectorAll('[data-nav]').forEach(a =>
     a.classList.toggle('on', a.dataset.nav.split(' ').includes(id)));
@@ -759,6 +855,79 @@ function showPage() {
   Object.values(state.charts).forEach(c => c && c.resize());
   if (id === 'myfarm') renderSaved();
   if (id === 'ask') renderHelperContext();
+  if (id === 'proof') renderProof();
+}
+
+// ---------- Proof page: the problem in numbers and a back-test, for the saved Henry County field ----------
+// Everything here is worked out from the saved files in data/raw/. Nothing is typed in by hand.
+
+const PROOF_FIELD = 'henry_va';
+
+async function renderProof() {
+  if (!state.proof) {
+    try {
+      const [power, ndvi, soil, drought] = await Promise.all([
+        getJson(`data/raw/power_${PROOF_FIELD}.json`), getJson(`data/raw/ndvi_${PROOF_FIELD}.json`, true),
+        getJson(`data/raw/soil_${PROOF_FIELD}.json`, true), getJson(`data/raw/drought_${PROOF_FIELD}.json`, true)]);
+      state.proof = {
+        ind: computeFieldIndicators(power, ndvi), soil, drought,
+        backtest: drought ? droughtBacktest(dryMonthsByYear(parsePower(power)), drought.weeks) : null,
+      };
+    } catch (err) {
+      console.error('Proof page', err);
+      $('proof-numbers').innerHTML = '<p class="muted">The saved data for this page could not be loaded. Reload the page to try again.</p>';
+      return;
+    }
+  }
+  const { ind, soil, backtest } = state.proof;
+  const early = `${THRESHOLDS.EARLY_YEARS[0]}–${THRESHOLDS.EARLY_YEARS[1]}`;
+  const recent = `${THRESHOLDS.RECENT_YEARS[0]}–${THRESHOLDS.RECENT_YEARS[1]}`;
+
+  // 1. The problem in numbers
+  const bare = ind.ndvi.available ? ind.ndvi.byMonth.filter(m => m.bare) : [];
+  const allHeavy = ind.monthly.reduce((s, m) => s + m.extremeRainPerYear, 0);
+  const bareHeavy = bare.reduce((s, m) => s + ind.monthly[m.month - 1].extremeRainPerYear, 0);
+  $('proof-numbers').innerHTML = [
+    card('Heavy-rain days', `${fmt(ind.extremeRain.recent, 1)} / year`,
+      `Days with over 2 in (50 mm) of rain in ${recent}. It was ${fmt(ind.extremeRain.early, 1)} a year in ${early}.` +
+      swing(ind, 'extremeRainDays', ind.extremeRain.diff, 'days') + ' <span class="tag">NASA POWER</span>'),
+    ind.ndvi.available
+      ? card('Months with little plant cover', bare.length ? bare.map(m => m.name).join(', ') : 'None',
+          `From ${ind.ndvi.points.length} satellite images of this spot.` +
+          (bare.length && allHeavy > 0 ? ` These months get ${Math.round(bareHeavy / allHeavy * 100)}% of the heavy-rain days.` : '') +
+          ' <span class="tag tag-modis">MODIS NDVI</span>', bare.length > 0)
+      : card('Months with little plant cover', 'n/a', 'No satellite images are saved for this field.'),
+    soil && soil.kwfact !== null && soil.kwfact !== undefined
+      ? card('How easily this soil washes', `K = ${fmt(soil.kwfact, 2)}`,
+          `Soil erodibility (the K in RUSLE) for ${esc(soil.compname)} soil. A higher K means soil that washes away more easily. ` +
+          `Slope here: ${fmt(soil.slope_r)}%. <span class="tag tag-usda">USDA soil survey</span>`)
+      : card('How easily this soil washes', 'n/a', 'The soil survey has no erodibility value saved for this spot.'),
+    card('Growing-season rain', rainText(ind.rain.recent),
+      `April–September in ${recent}; ${signed(ind.rain.diff / 25.4, 1)} in compared with ${early}.` +
+      swing(ind, 'seasonRainMm', ind.rain.diff, 'in', inches) + ' <span class="tag">NASA POWER</span>'),
+  ].join('');
+
+  // 2. Back-test against the U.S. Drought Monitor
+  if (!backtest) {
+    $('proof-backtest').innerHTML = '<p class="muted">The Drought Monitor record is not saved, so the back-test cannot be shown.</p>';
+    return;
+  }
+  const t = backtest.total;
+  const drought = t.hits + t.missed, flagged = t.hits + t.extra;
+  const pct = (a, b) => (b ? `${Math.round(a / b * 100)}%` : 'n/a');
+  $('proof-backtest').innerHTML = `
+    <div class="cards">
+      ${card('Drought months we caught', `${t.hits} of ${drought}`, `Our dry-soil flag was on in ${pct(t.hits, drought)} of the months the Drought Monitor recorded drought in Henry County.`)}
+      ${card('Drought months we missed', `${t.missed} of ${drought}`, 'Months with drought on record where our flag stayed off.', t.missed > 0)}
+      ${card('Flags with no drought on record', `${t.extra} of ${flagged}`, `${pct(t.extra, flagged)} of our flagged months were not drought months. A flag means soil drier than usual for the month, which is not always an official drought.`, true)}
+    </div>
+    <details class="panel">
+      <summary>Year by year (${backtest.byYear[0].year}–${backtest.byYear[backtest.byYear.length - 1].year})</summary>
+      <div class="table-scroll"><table class="proof-table">
+        <thead><tr><th scope="col">Year</th><th scope="col">Drought months on record</th><th scope="col">We flagged</th><th scope="col">We missed</th><th scope="col">Flagged, no drought</th></tr></thead>
+        <tbody>${backtest.byYear.map(y => `<tr><th scope="row">${y.year}</th><td>${y.hits + y.missed}</td><td>${y.hits}</td><td>${y.missed}</td><td>${y.extra}</td></tr>`).join('')}</tbody>
+      </table></div>
+    </details>`;
 }
 
 // ---------- My farm: saved checks ----------
@@ -766,12 +935,14 @@ function showPage() {
 function saveCurrentCheck() {
   if (!state.results) return;
   const [current, ...alts] = state.results;
+  const chosen = state.results.find(r => r.rotation.id === state.chosenId) || current;
   const check = {
     id: Date.now(),
     savedAt: new Date().toISOString(),
     fieldId: state.field.id, fieldName: state.field.name, place: state.field.place,
     lat: state.field.lat, lon: state.field.lon, // rounded to 3 decimals; the typed address is never saved
     rotationId: $('rotation-select').value, rotationName: current.rotation.name,
+    chosenId: chosen.rotation.id, chosenName: chosen.rotation.name, chosenTotal: chosen.total, // the plan the farmer picked
     irrigated: $('irrigated').checked, texture: $('texture-select').value,
     noHay: $('no-hay').checked, sellsForage: $('sells-forage').checked,
     weights: weights(),
@@ -780,7 +951,7 @@ function saveCurrentCheck() {
     options: [current, ...alts].map(r => ({ name: r.rotation.name, total: r.total, isCurrent: r.isCurrent })),
   };
   $('save-msg').innerHTML = saveCheck(check)
-    ? 'Saved. Find it any time on <a href="#myfarm">My farm</a>.'
+    ? `Saved “${esc(chosen.rotation.name)}” as your plan. Open it any time on <a href="#myfarm">My farm</a>.`
     : 'Could not save: this browser is blocking storage (private window?).';
 }
 
@@ -808,27 +979,34 @@ function renderSaved() {
         <div><dt>Heavy-rain cover</dt><dd>${c.cover}%</dd></div>
         <div><dt>Warning signs on</dt><dd>${c.warningsOn} of 4</dd></div>
         <div><dt>Best fit option</dt><dd>${best ? `${esc(best.name)} · ${best.total}/100` : 'none'}</dd></div>
+        ${c.chosenName ? `<div><dt>Your plan</dt><dd>${esc(c.chosenName)} · ${c.chosenTotal}/100</dd></div>` : ''}
       </dl>
       ${change}
       <div class="saved-actions">
-        <button type="button" class="btn btn-primary" data-open="${c.id}">Open</button>
+        <button type="button" class="btn btn-primary" data-plan="${c.id}">Open plan</button>
+        <button type="button" class="btn btn-ghost" data-open="${c.id}">Change inputs</button>
         <button type="button" class="btn btn-ghost" data-delete="${c.id}">Remove</button>
       </div>
     </article>`;
   }).join('');
 }
 
-// Puts a saved check's answers back into the inputs and opens the comparison.
-async function openCheck(id) {
+// Puts a saved check's answers back into the inputs. Returns the check, or null if it could not load.
+async function restoreCheck(id) {
   const c = listChecks().find(x => x.id === id);
-  if (!c || !state.ready) return; // data still loading
+  if (!c || !state.ready) return null; // data still loading
   if (c.fieldId.startsWith('pt_')) {
-    if (!(await pickPoint(c.lat, c.lon, c.fieldName))) { location.hash = 'field'; return; }
+    if (!(await pickPoint(c.lat, c.lon, c.fieldName))) { location.hash = 'field'; return null; }
   } else {
     $('field-select').value = c.fieldId;
     await selectField(c.fieldId);
   }
   $('rotation-select').value = c.rotationId;
+  // A saved crop cycle can drop out of the list (the crop table changed). Say so instead of silently swapping it.
+  const lostCycle = $('rotation-select').value !== c.rotationId;
+  if (lostCycle) $('rotation-select').value = state.field.default_rotation;
+  $('save-msg').textContent = lostCycle
+    ? `"${c.rotationName}" is no longer in the list for this field, so this shows a different crop cycle.` : '';
   $('irrigated').checked = c.irrigated;
   $('texture-select').value = c.texture;
   $('no-hay').checked = c.noHay;
@@ -836,9 +1014,111 @@ async function openCheck(id) {
   for (const [k, v] of Object.entries(c.weights)) {
     if ($(`w-${k}`)) { $(`w-${k}`).value = v; $(`o-${k}`).textContent = v; }
   }
+  // Put the farmer's saved pick back too (an older save has none and gets the best fit).
+  state.chosenId = c.chosenId || null;
+  state.chosenByFarmer = !!c.chosenId;
   render();
-  location.hash = 'compare';
+  return c;
 }
+
+// "Change inputs" on My farm: back to the comparison with the saved answers.
+async function openCheck(id) {
+  if (await restoreCheck(id)) location.hash = 'compare';
+}
+
+// ---------- Your plan: a saved plan played back year by year (My farm > Open plan) ----------
+// The steps come from planSteps in scoring.js. This part only shows them one at a time.
+
+const PLAN_STEP_MS = 4000; // how long each step stays up while playing
+
+async function openPlan(id) {
+  const c = await restoreCheck(id);
+  if (!c) return;
+  const [current] = state.results;
+  const saved = state.results.find(r => r.rotation.id === c.chosenId);
+  const result = saved || state.results.find(r => r.rotation.id === state.chosenId) || current;
+  const note = saved ? ''
+    : c.chosenId ? `“${c.chosenName}” is no longer one of the three options for this field, so this shows today's best fit instead.`
+    : 'This check was saved before you could pick a plan, so this shows its best fit.';
+  state.plan = { result, steps: planSteps(result, current, currentField()), shown: -1, note, timer: null };
+  location.hash = 'plan';
+  renderPlan();
+}
+
+function renderPlan() {
+  const p = state.plan;
+  const r = p.result.rotation;
+  $('plan-title').textContent = r.name;
+  $('plan-sub').textContent = `${state.field.name} · ${p.result.total}/100 for your priorities` +
+    (p.result.isCurrent ? ' · this is what you grow now' : '');
+  $('plan-note').textContent = p.note;
+  $('plan-note').hidden = !p.note;
+  // One row of 12 months for each year of the cycle. Cells start empty and fill in as the steps play.
+  $('plan-years').innerHTML = r.years.map((_, i) => `
+    <div class="plan-year">
+      <p class="plan-year-name">Year ${i + 1}</p>
+      <div class="month-strip">${MONTH_NAMES.map((name, k) =>
+        `<div class="month todo" data-cell="${i + 1}-${k + 1}"><span class="m">${name}</span><span class="what"></span></div>`).join('')}</div>
+    </div>`).join('') +
+    (r.years.length > 1 ? `<p class="small muted">After year ${r.years.length} the cycle starts again at year 1.</p>` : '');
+  $('plan-steps').innerHTML = '';
+  p.shown = -1;
+  // People who ask their device for less motion get the whole plan at once, with no playing.
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still) showPlanStep(p.steps.length - 1);
+  else { showPlanStep(0); playPlan(true); }
+}
+
+// Shows every step up to and including number n (so Back removes the later ones).
+function showPlanStep(n) {
+  const p = state.plan;
+  n = Math.max(0, Math.min(p.steps.length - 1, n));
+  if (n < p.shown) { $('plan-steps').innerHTML = ''; p.shown = -1; }
+  for (let i = p.shown + 1; i <= n; i++) {
+    const s = p.steps[i];
+    const li = document.createElement('li');
+    li.className = `plan-step ${s.kind}`;
+    li.innerHTML = `<p class="plan-step-when">${s.year ? `Year ${s.year}` : 'The whole cycle'}</p>
+      <h3>${esc(s.title)}</h3>${list(s.notes)}`;
+    $('plan-steps').appendChild(li);
+  }
+  p.shown = n;
+  // Fill in the months for the steps shown so far; the newest step's months are outlined.
+  document.querySelectorAll('#plan-years .month').forEach(cell => {
+    cell.className = 'month todo';
+    cell.querySelector('.what').textContent = '';
+  });
+  p.steps.slice(0, n + 1).forEach((s, i) => {
+    for (const c of s.cells) {
+      const cell = document.querySelector(`#plan-years [data-cell="${c.year}-${c.month}"]`);
+      cell.className = `month ${s.kind === 'crop' ? 'covered' : 'bare'}${i === n ? ' now' : ''}`;
+      cell.querySelector('.what').textContent = s.kind === 'crop' ? s.title.split(':')[0].split(' (')[0] : 'bare';
+    }
+  });
+  document.querySelectorAll('#plan-steps .plan-step').forEach((li, i) => li.classList.toggle('now', i === n));
+  $('plan-count').textContent = `Step ${n + 1} of ${p.steps.length}`;
+  $('plan-back').disabled = n === 0;
+  $('plan-next').disabled = n === p.steps.length - 1;
+  // The newest step is also named right under the year rows, so it is in view while they fill in.
+  const s = p.steps[n];
+  $('plan-now').innerHTML = `<strong>${s.year ? `Year ${s.year}` : 'The whole cycle'}: ${esc(s.title)}.</strong> ${esc(s.notes[s.kind === 'crop' && s.notes.length > 1 ? 1 : 0])}`;
+  if (n === p.steps.length - 1) playPlan(false);
+}
+
+function playPlan(on) {
+  const p = state.plan;
+  if (!p) return;
+  clearInterval(p.timer);
+  p.timer = null;
+  if (on && p.shown >= p.steps.length - 1) showPlanStep(0); // Play at the end starts over
+  if (on) p.timer = setInterval(() => showPlanStep(p.shown + 1), PLAN_STEP_MS);
+  $('plan-play').textContent = on ? 'Pause' : (p.shown >= p.steps.length - 1 ? 'Play again' : 'Play');
+}
+
+$('plan-play').addEventListener('click', () => playPlan(!state.plan.timer));
+$('plan-next').addEventListener('click', () => { playPlan(false); showPlanStep(state.plan.shown + 1); });
+$('plan-back').addEventListener('click', () => { playPlan(false); showPlanStep(state.plan.shown - 1); });
+$('plan-all').addEventListener('click', () => { playPlan(false); showPlanStep(state.plan.steps.length - 1); });
 
 // ---------- Account: optional sign-in (the Firebase code is in cloud.js) ----------
 
@@ -852,8 +1132,11 @@ const SIGN_IN_ERRORS = {
   'auth/unauthorized-domain': 'Google sign-in is not allowed on this web address yet.',
   'auth/operation-not-allowed': 'This sign-in method is not turned on yet. Use your email and a password for now.',
 };
-// The Firebase code in brackets helps the team find the cause.
-const signInError = err => `${SIGN_IN_ERRORS[err.code] || 'Sign-in did not work.'} (${err.code || err.message})`;
+// The farmer sees a plain message; the Firebase code goes to the console for the team.
+const signInError = err => {
+  console.error('Sign-in', err.code || err.message);
+  return SIGN_IN_ERRORS[err.code] || 'Sign-in did not work. Your checks still save in this browser.';
+};
 
 function renderAccount() {
   const c = window.cloud || {};
@@ -874,10 +1157,11 @@ function renderAccount() {
 
 async function runSignIn(action) {
   $('account-error').textContent = '';
+  if (window.cloud && window.cloud.load) await window.cloud.load(); // sign-in code loads on first use
   if (!window.cloud || !window.cloud.ready) {
     $('account-error').textContent = window.cloud && window.cloud.reason === 'loading'
       ? 'Still connecting. Try again in a moment.'
-      : 'Sign-in is not connected yet: add the Firebase config in js/firebase-config.js (see the README). Your checks still save in this browser.';
+      : 'Sign-in is not available right now. Your checks still save in this browser.';
     return;
   }
   try { await action(); } catch (err) { $('account-error').textContent = signInError(err); }
@@ -887,6 +1171,7 @@ async function runSignIn(action) {
 function openSignIn() {
   const d = $('signin-dialog');
   if (d.open) return;
+  if (window.cloud && window.cloud.load) window.cloud.load(); // start loading the sign-in code now
   renderAccount();
   $('account-error').textContent = '';
   d.classList.remove('closing');
@@ -1004,8 +1289,8 @@ function clearChat() {
 
 // What the helper says for each kind of failure. Your results never change either way.
 const HELPER_ERRORS = {
-  'not-set-up': 'The AI helper is not set up on this copy of the site yet (no OpenRouter key on Netlify). Every score and explanation in the tool still works without it.',
-  'no-server': 'The AI helper only runs on the live Netlify site, not on a plain local server. Every score and explanation still works here.',
+  'not-set-up': 'The AI helper is not turned on for this site yet. Every score and explanation in the tool still works without it.',
+  'no-server': 'The AI helper is not available here. Every score and explanation still works without it.',
   busy: 'The free AI service is busy right now. Wait a minute and try again. Everything on your results pages still works.',
   other: 'The helper could not answer right now. Try again in a moment. Your results are unchanged.',
 };
@@ -1021,7 +1306,7 @@ async function askHelper(question) {
   try {
     // Free AI models can stall; give up after 25 seconds instead of spinning forever.
     const stop = new AbortController();
-    setTimeout(() => stop.abort(), 25000);
+    var giveUp = setTimeout(() => stop.abort(), 25000);
     const res = await fetch('/.netlify/functions/ask', {
       signal: stop.signal,
       method: 'POST',
@@ -1044,6 +1329,7 @@ async function askHelper(question) {
     row.querySelector('.who')?.remove();
     answer.textContent = HELPER_ERRORS[err.kind] || HELPER_ERRORS.other;
   } finally {
+    clearTimeout(giveUp);
     $('helper-send').disabled = false;
     $('helper-log').scrollTop = $('helper-log').scrollHeight;
   }
@@ -1078,8 +1364,16 @@ $('nav-toggle').addEventListener('click', () => {
   $('nav-toggle').setAttribute('aria-expanded', String(open));
 });
 $('save-check').addEventListener('click', saveCurrentCheck);
+$('options').addEventListener('click', e => {
+  const id = e.target.dataset.choose;
+  if (!id) return;
+  state.chosenId = id;
+  state.chosenByFarmer = true;
+  markChoice();
+});
 $('saved-list').addEventListener('click', e => {
-  const open = e.target.dataset.open, del = e.target.dataset.delete;
+  const open = e.target.dataset.open, del = e.target.dataset.delete, plan = e.target.dataset.plan;
+  if (plan) openPlan(Number(plan));
   if (open) openCheck(Number(open));
   if (del) { deleteCheck(Number(del)); renderSaved(); }
 });
@@ -1088,6 +1382,7 @@ $('find-me').addEventListener('click', findMe);
 $('field-name').addEventListener('input', e => renameField(e.target.value));
 $('remove-field').addEventListener('click', removeField);
 $('demo-toggle').addEventListener('click', () => setDemo(!state.demo));
+document.querySelectorAll('.show-example').forEach(b => b.addEventListener('click', showExample));
 window.addEventListener('hashchange', showPage);
 showPage();
 init();
