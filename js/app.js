@@ -519,7 +519,7 @@ function setDemo(on, page = 'field') {
   }
 }
 
-// One click for a first-time visitor or a judge: the saved Henry County, Virginia field,
+// One click for a first-time visitor or a judge: the saved Franklin County, Virginia field,
 // straight to its answer, with no waiting on any outside service.
 function showExample() {
   if (!state.ready) { state.exampleWanted = true; return; }
@@ -938,10 +938,10 @@ function showPage() {
   if (id === 'proof') renderProof();
 }
 
-// ---------- Proof page: the problem in numbers and a back-test, for the saved Henry County field ----------
+// ---------- Proof page: the problem in numbers and a back-test, for the saved Franklin County field ----------
 // Everything here is worked out from the saved files in data/raw/. Nothing is typed in by hand.
 
-const PROOF_FIELD = 'henry_va';
+const PROOF_FIELD = 'franklin_va';
 
 async function renderProof() {
   if (!state.proof) {
@@ -997,7 +997,7 @@ async function renderProof() {
   const pct = (a, b) => (b ? `${Math.round(a / b * 100)}%` : 'n/a');
   $('proof-backtest').innerHTML = `
     <div class="cards">
-      ${card('Drought months we caught', `${t.hits} of ${drought}`, `Our dry-soil flag was on in ${pct(t.hits, drought)} of the months the Drought Monitor recorded drought in Henry County.`)}
+      ${card('Drought months we caught', `${t.hits} of ${drought}`, `Our dry-soil flag was on in ${pct(t.hits, drought)} of the months the Drought Monitor recorded drought in Franklin County.`)}
       ${card('Drought months we missed', `${t.missed} of ${drought}`, 'Months with drought on record where our flag stayed off.', t.missed > 0)}
       ${card('Flags with no drought on record', `${t.extra} of ${flagged}`, `${pct(t.extra, flagged)} of our flagged months were not drought months. A flag means soil drier than usual for the month, which is not always an official drought.`, true)}
     </div>
@@ -1078,8 +1078,10 @@ async function restoreCheck(id) {
   if (c.fieldId.startsWith('pt_')) {
     if (!(await pickPoint(c.lat, c.lon, c.fieldName))) { location.hash = 'field'; return null; }
   } else {
-    $('field-select').value = c.fieldId;
-    await selectField(c.fieldId);
+    // The demo field was renamed from henry_va when we found it sits in Franklin County.
+    const fieldId = c.fieldId === 'henry_va' ? 'franklin_va' : c.fieldId;
+    $('field-select').value = fieldId;
+    await selectField(fieldId);
   }
   state.rotationByFarmer[state.field.id] = true; // a saved check keeps its own crop cycle
   $('rotation-note').textContent = '';

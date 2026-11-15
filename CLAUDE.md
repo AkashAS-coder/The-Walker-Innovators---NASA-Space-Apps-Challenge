@@ -6,7 +6,7 @@ Guidance for Claude Code in this repo. Team: The Walker Innovators (three high s
 
 - Project name: Field Shift: Soil Erosion Check
 - Stack: plain HTML/JS + Leaflet + Chart.js (static site on Netlify, with two small Netlify Functions for crop history and the AI helper). Fetch scripts are Python standard library only.
-- Demo field: Henry County, VA, lat 36.83, lon -79.81 (a real crop pixel found in CropScape; the Martinsville default point was forest). Second region: near Fallon, NV, lat 39.41, lon -118.78.
+- Demo field: southern Franklin County, VA (just north of the Henry County line; checked with the Census geocoder, FIPS 51067), lat 36.83, lon -79.81 (a real crop pixel found in CropScape; the Martinsville default point was forest). Second region: near Fallon, NV, lat 39.41, lon -118.78.
 - Current rotation for the demo field: corn, then wheat with double-crop soybean (from CropScape 2016–2025)
 - Public app link: TODO
 

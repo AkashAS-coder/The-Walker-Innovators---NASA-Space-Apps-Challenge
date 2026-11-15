@@ -225,7 +225,7 @@ Rule-based. No machine learning and no AI in the scoring. Rule weights are in `R
 **The `field` object**
 
 ```js
-{ id: 'henry_va', region: 'east', irrigated: false, sellsForage: false, texture: 'Sandy loam',
+{ id: 'franklin_va', region: 'east', irrigated: false, sellsForage: false, texture: 'Sandy loam',
   soil: { /* saved soil file */ }, ind: { /* computeFieldIndicators output */ } }
 ```
 
@@ -251,4 +251,4 @@ Rule-based. No machine learning and no AI in the scoring. Rule weights are in `R
 node --test tests/run.test.js
 ```
 
-The tests check the dry-spell counter, that every crop in `rotations.csv` exists in `crops.csv`, winter coverage, and that the saved Henry County data gives three scored options with all five boxes filled.
+The tests check the dry-spell counter, that every crop in `rotations.csv` exists in `crops.csv`, winter coverage, and that the saved Franklin County data gives three scored options with all five boxes filled.

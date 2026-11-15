@@ -1,6 +1,6 @@
 # 3-minute demo script
 
-For the live demo and the video. Every number below is what the app shows for the Henry County demo field with the default settings on Nov 14, 2026. If the data or rules change, re-read the numbers from the screen before presenting.
+For the live demo and the video. Every number below is what the app shows for the Franklin County demo field with the default settings on Nov 14, 2026. If the data or rules change, re-read the numbers from the screen before presenting.
 
 ## 0:00 – 0:30 · The problem
 
@@ -10,7 +10,7 @@ Open the app and click **Check my field**. Show how a farmer adds their own land
 
 > "Any farmer in the lower 48 can do this with their own fields, give each one a name, and switch between them. No account needed."
 
-Then scroll to the bottom of the page and click **Try demo mode (sample fields)**. It opens the Henry County demo field, a real crop field picked from the USDA Cropland Data Layer, with all its data saved, so the walkthrough below works even if a NASA service is slow.
+Then scroll to the bottom of the page and click **Try demo mode (sample fields)**. It opens the Franklin County demo field, a real crop field picked from the USDA Cropland Data Layer, with all its data saved, so the walkthrough below works even if a NASA service is slow.
 
 ## 0:30 – 1:15 · Step 1: Check your soil
 

@@ -32,11 +32,11 @@ test('corn-soybean with no cover is bare in winter, cover crop version is not', 
   assert.strictEqual(covered[0], 1);
 });
 
-test('scores on saved Henry County data are between 0 and 100', () => {
-  const power = JSON.parse(read('data/raw/power_henry_va.json'));
-  const ndviFile = 'data/raw/ndvi_henry_va.json';
+test('scores on saved Franklin County data are between 0 and 100', () => {
+  const power = JSON.parse(read('data/raw/power_franklin_va.json'));
+  const ndviFile = 'data/raw/ndvi_franklin_va.json';
   const ndvi = fs.existsSync(path.join(root, ndviFile)) ? JSON.parse(read(ndviFile)) : null;
-  const field = { id: 'henry_va', irrigated: false, soil: JSON.parse(read('data/raw/soil_henry_va.json')),
+  const field = { id: 'franklin_va', irrigated: false, soil: JSON.parse(read('data/raw/soil_franklin_va.json')),
                   ind: ind.computeFieldIndicators(power, ndvi) };
   const weights = { water: 3, soil: 3, income: 3, forage: 1, erosion: 3 };
   const results = sc.compareRotations(rotations, 'corn_soy', field, weights);
@@ -153,10 +153,10 @@ test('a cycle with no main crop still gets a real water score, not NaN', () => {
 });
 
 test('the answer card names the risk, the best-fit option and one local check', () => {
-  const power = JSON.parse(read('data/raw/power_henry_va.json'));
-  const ndvi = JSON.parse(read('data/raw/ndvi_henry_va.json'));
-  const field = { id: 'henry_va', region: 'east', irrigated: false, texture: 'Loam',
-                  soil: JSON.parse(read('data/raw/soil_henry_va.json')), ind: ind.computeFieldIndicators(power, ndvi) };
+  const power = JSON.parse(read('data/raw/power_franklin_va.json'));
+  const ndvi = JSON.parse(read('data/raw/ndvi_franklin_va.json'));
+  const field = { id: 'franklin_va', region: 'east', irrigated: false, texture: 'Loam',
+                  soil: JSON.parse(read('data/raw/soil_franklin_va.json')), ind: ind.computeFieldIndicators(power, ndvi) };
   const results = sc.compareRotations(rotations, 'corn_wheat_soy', field, { water: 3, soil: 4, income: 3, forage: 1, erosion: 4 });
   const [current, ...alts] = results;
   const a = sc.answerLines(results);
@@ -202,19 +202,19 @@ test('the back-test counts hits, misses and extra flags', () => {
   assert.strictEqual(b.byYear[0].year, 2020);
 });
 
-test('the saved Henry County back-test adds up to every month of 2005-2025', () => {
-  const days = ind.parsePower(JSON.parse(read('data/raw/power_henry_va.json')));
-  const weeks = JSON.parse(read('data/raw/drought_henry_va.json')).weeks;
+test('the saved Franklin County back-test adds up to every month of 2005-2025', () => {
+  const days = ind.parsePower(JSON.parse(read('data/raw/power_franklin_va.json')));
+  const weeks = JSON.parse(read('data/raw/drought_franklin_va.json')).weeks;
   const t = ind.droughtBacktest(ind.dryMonthsByYear(days), weeks).total;
   assert.strictEqual(t.months, 252);
   assert.strictEqual(t.hits + t.missed + t.extra + t.neither, 252);
 });
 
-// The saved Henry County field, scored with the page's starting sliders.
-function henryResults() {
-  const field = { id: 'henry_va', region: 'east', irrigated: false, texture: 'Loam',
-                  soil: JSON.parse(read('data/raw/soil_henry_va.json')),
-                  ind: ind.computeFieldIndicators(JSON.parse(read('data/raw/power_henry_va.json')), JSON.parse(read('data/raw/ndvi_henry_va.json'))) };
+// The saved Franklin County field, scored with the page's starting sliders.
+function franklinResults() {
+  const field = { id: 'franklin_va', region: 'east', irrigated: false, texture: 'Loam',
+                  soil: JSON.parse(read('data/raw/soil_franklin_va.json')),
+                  ind: ind.computeFieldIndicators(JSON.parse(read('data/raw/power_franklin_va.json')), JSON.parse(read('data/raw/ndvi_franklin_va.json'))) };
   return { field, results: sc.compareRotations(rotations, 'corn_wheat_soy', field, { water: 3, soil: 4, income: 3, forage: 1, erosion: 4 }) };
 }
 
@@ -229,7 +229,7 @@ test('the year-by-year plan calendar agrees with the averaged cover for every cr
 });
 
 test('plan steps walk through each crop, report bare gaps and end with a summary', () => {
-  const { field, results } = henryResults();
+  const { field, results } = franklinResults();
   const [current] = results;
   const steps = sc.planSteps(current, current, field);
   // Corn then wheat and double-crop soybean: a bare gap, corn, wheat, soybean, a bare gap, the summary.
@@ -245,7 +245,7 @@ test('plan steps walk through each crop, report bare gaps and end with a summary
 });
 
 test('a plan that covers every month has no bare step and its summary matches the comparison', () => {
-  const { field, results } = henryResults();
+  const { field, results } = franklinResults();
   const [current, ...alts] = results;
   const full = alts.find(r => r.bareMonths.length === 0);
   const steps = sc.planSteps(full, current, field);
@@ -256,7 +256,7 @@ test('a plan that covers every month has no bare step and its summary matches th
 });
 
 test('the crop record picks the closest listed crop cycle', () => {
-  const history = JSON.parse(read('data/raw/cropscape_henry_va.json')).history;
+  const history = JSON.parse(read('data/raw/cropscape_franklin_va.json')).history;
   const match = sc.matchRotation(history, rotations, 'east');
   // Recorded: corn, soybean, wheat + double-crop soybean, sunflower. Four of those five are in this cycle.
   assert.strictEqual(match.id, 'corn_soy_wheat');
@@ -273,35 +273,35 @@ test('every CropScape name we map points at a crop in crops.csv', () => {
   for (const ids of Object.values(sc.CDL_CROPS)) for (const id of ids) assert.ok(crops[id], `unknown crop ${id}`);
 });
 
-function henryField() {
-  return { id: 'henry_va', region: 'east', irrigated: false, texture: 'Sandy loam',
-           soil: JSON.parse(read('data/raw/soil_henry_va.json')),
-           ind: ind.computeFieldIndicators(JSON.parse(read('data/raw/power_henry_va.json')),
-                                           JSON.parse(read('data/raw/ndvi_henry_va.json'))) };
+function franklinField() {
+  return { id: 'franklin_va', region: 'east', irrigated: false, texture: 'Sandy loam',
+           soil: JSON.parse(read('data/raw/soil_franklin_va.json')),
+           ind: ind.computeFieldIndicators(JSON.parse(read('data/raw/power_franklin_va.json')),
+                                           JSON.parse(read('data/raw/ndvi_franklin_va.json'))) };
 }
 const evenWeights = { water: 3, soil: 3, income: 3, forage: 3, erosion: 3 };
 
 test('a wanted crop is in both alternatives and the current cycle is still shown', () => {
-  const results = sc.compareRotations(rotations, 'corn_soy', henryField(), evenWeights, { wantCrop: 'grain_sorghum' });
+  const results = sc.compareRotations(rotations, 'corn_soy', franklinField(), evenWeights, { wantCrop: 'grain_sorghum' });
   assert.strictEqual(results[0].rotation.id, 'corn_soy');
   assert.ok(results.length >= 2);
   for (const r of results.slice(1)) {
     assert.ok(r.rotation.years.some(y => [y.main, y.winter].some(c => c && c.id === 'grain_sorghum')), r.rotation.id);
   }
   // With no wanted crop the answer is the same as before.
-  const plain = sc.compareRotations(rotations, 'corn_soy', henryField(), evenWeights, {});
-  assert.deepStrictEqual(sc.compareRotations(rotations, 'corn_soy', henryField(), evenWeights).map(r => r.rotation.id),
+  const plain = sc.compareRotations(rotations, 'corn_soy', franklinField(), evenWeights, {});
+  assert.deepStrictEqual(sc.compareRotations(rotations, 'corn_soy', franklinField(), evenWeights).map(r => r.rotation.id),
                          plain.map(r => r.rotation.id));
 });
 
 test('crop fit lists the bare months of a summer crop and a cover crop from the table for the gap', () => {
-  const fit = sc.cropFit(crops.grain_sorghum, henryField(), crops);
+  const fit = sc.cropFit(crops.grain_sorghum, franklinField(), crops);
   assert.match(fit.bare[0], /Nov, Dec/);
   assert.match(fit.bare[0], /Jan, Feb, Mar, Apr/);
   assert.match(fit.bare[1], /Cereal rye/);
   assert.match(fit.water[0], /Water need: /);
   assert.strictEqual(fit.source, crops.grain_sorghum.source);
-  assert.strictEqual(sc.cropFit(crops.alfalfa, henryField(), crops).bare[0], 'Covers the soil every month.');
+  assert.strictEqual(sc.cropFit(crops.alfalfa, franklinField(), crops).bare[0], 'Covers the soil every month.');
 });
 
 test('the peanut region note shows only on cycles with peanut', () => {

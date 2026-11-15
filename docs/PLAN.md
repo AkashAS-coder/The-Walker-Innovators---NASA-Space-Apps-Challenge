@@ -76,7 +76,7 @@ Download QuickStats as a CSV from the website. Its API needs a key, and keys can
 
 ### What the farmer sees (four parts on one page)
 
-1. **Pick your field:** type a county or click the map. Henry County is filled in for the demo.
+1. **Pick your field:** type a county or click the map. Franklin County is filled in for the demo.
 2. **Your field today:** soil card (SSURGO), "what you've grown" strip (CropScape), five weather cards (POWER), each with a one-line plain meaning, e.g. "Your frost-free season is X days longer than in 2005." The number must be computed, never typed in. Give frost risk its own visible card.
 3. **What matters to you:** five sliders (save water, build soil, extra income, forage, reduce erosion) plus a limits checkbox such as "no hay equipment".
 4. **Three options side by side:** current rotation plus two alternatives. Each card: fit score, water use compared with now, bare-field chart (NDVI), and the five boxes (why suggested, evidence, benefits, what we don't know, check locally).
@@ -352,7 +352,7 @@ If there is time, an AI model can rewrite the result into friendlier sentences. 
 
 ### Why this can win
 
-- **A real place.** Our demo field is in Henry County or nearby Southside Virginia, the region hosting our event. The team has talked with local farmers about technology; put that in the first slide.
+- **A real place.** Our demo field is in southern Franklin County, just north of Henry County and Martinsville, the region hosting our event. The team has talked with local farmers about technology; put that in the first slide.
 - **A real number.** Our finance angle: show a rough per-acre cost or income effect for each strategy, clearly labeled as an estimate needing local review.
 - **Honesty as a feature.** The "what we do not know" box on every strategy is exactly what the brief asks for ("make uncertainty visible") and what most teams skip.
 - **Proof it travels.** Run the same tool on the Nevada alfalfa country from the challenge photo to show it is not Virginia-only.

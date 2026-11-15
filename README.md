@@ -24,7 +24,7 @@ After changing any file in `js/` or `css/`, change the `?v=` number on the `<scr
 
 ## What it does
 
-1. **Check your soil**: find your field by address, by your location, or with a click on the map (demo mode adds two sample fields with saved data: Henry County, VA, and near Fallon, NV) and what you grow now. The four warning signs light up for your current rotation, with the NASA or USDA number behind each one.
+1. **Check your soil**: find your field by address, by your location, or with a click on the map (demo mode adds two sample fields with saved data: Franklin County, VA, and near Fallon, NV) and what you grow now. The four warning signs light up for your current rotation, with the NASA or USDA number behind each one.
 2. **See the cycle**: a month-by-month strip of your current rotation (bare months, heavy-rain months, crops at risk) next to the MODIS greenness chart that shows when satellites saw the field bare.
 3. **Compare fixes**: five priority sliders and three rotation cards. Each card leads with how many warning signs it fixes (and any new one it adds), then the fit score, sub-scores and the five explanation boxes.
 4. **Why we believe this**: the soil health principle behind each warning sign, plus the full NASA POWER weather cards, soil survey, glossary, scoring rules and sources.
@@ -76,12 +76,12 @@ node --test tests/run.test.js
 - Crop trait ratings in `data/crops.csv` are our reading of the linked extension sources. Rows marked `verified=no` still need a team member to check them.
 - No prices or market data yet, so income is counted in harvests, not dollars.
 - NASA POWER is a grid about 50 km wide, not the exact field. A MODIS pixel is 250 m wide and can include land next to the field.
-- NDVI covers only 2021–2025 because the subset service is slow. For Henry County, the 15 images after April 23, 2025 are missing because the server kept failing; run `python3 src/fetch_ndvi.py henry_va` to fill them in (it resumes). Widen `FIRST_YEAR` in `src/fetch_ndvi.py` when there is time.
+- NDVI covers only 2021–2025 because the subset service is slow. For Franklin County, the 15 images after April 23, 2025 are missing because the server kept failing; run `python3 src/fetch_ndvi.py franklin_va` to fill them in (it resumes). Widen `FIRST_YEAR` in `src/fetch_ndvi.py` when there is time.
 - Planting months follow a Virginia calendar, so they may not fit Nevada. The Nevada rotations are built from crops CropScape records near the field, not from a Nevada extension guide.
 - Water-need and heat ratings for most crops are our judgment; see [docs/CROP_CHECK.md](docs/CROP_CHECK.md) for which traits each source supports.
 - A farmer adds their own named fields anywhere in the lower 48 (address, their location, or a map click); fields are kept in this browser. Each field gets NASA POWER weather and the USDA soil survey live (about 2 seconds), then crop history (CropScape, through a Netlify Function, so only on the live Netlify site) and two years of MODIS greenness (a minute or two) in the background. If a service does not answer, that part is shown as missing. The worked-out numbers for each field (a few KB, not the raw NASA file) are kept in the browser, so a return visit shows the field without asking NASA again.
 - The farmer picks one of the three crop cycles and saves it. On My farm, "Open plan" plays that plan back year by year, one step at a time, using only the crop table and the field's NASA, MODIS and soil data. A field's region (East or dry West) comes only from the 100th meridian.
-- The two sample fields (Henry County VA, Fallon NV) appear only in demo mode, turned on at the bottom of the page.
+- The two sample fields (Franklin County VA, Fallon NV) appear only in demo mode, turned on at the bottom of the page.
 - The demo fields are real crop pixels chosen from CropScape. We don't know who farms them, and no personal information is used.
 - Yields are not modeled.
 - The rankings come from transparent, hand-written scoring rules. They are not AI-generated and are not validated predictions: they have not been tested against real farm outcomes.

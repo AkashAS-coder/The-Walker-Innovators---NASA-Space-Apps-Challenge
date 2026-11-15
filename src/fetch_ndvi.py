@@ -77,7 +77,7 @@ def fetch(field):
 
 
 def main():
-    # Optional: pass one field id (python3 src/fetch_ndvi.py henry_va) to fetch only that field,
+    # Optional: pass one field id (python3 src/fetch_ndvi.py franklin_va) to fetch only that field,
     # so two fields can download at the same time in two terminals.
     RAW.mkdir(parents=True, exist_ok=True)
     fields = json.loads((ROOT / "data" / "fields.json").read_text())

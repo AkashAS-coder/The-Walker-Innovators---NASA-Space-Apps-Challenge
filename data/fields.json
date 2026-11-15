@@ -1,8 +1,8 @@
 [
   {
-    "id": "henry_va",
-    "name": "Demo field in northern Henry County",
-    "place": "Henry County, Virginia",
+    "id": "franklin_va",
+    "name": "Demo field in southern Franklin County",
+    "place": "Franklin County, Virginia",
     "lat": 36.83,
     "lon": -79.81,
     "region": "east",

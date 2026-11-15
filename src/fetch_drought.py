@@ -24,7 +24,7 @@ API = ("https://usdmdataservices.unl.edu/api/CountyStatistics/"
 # Same years as the NASA POWER files (src/fetch_power.py).
 START, END = "1/1/2005", "12/31/2025"
 # County FIPS codes (US Census) for the demo fields in data/fields.json.
-COUNTY_FIPS = {"henry_va": "51089"}
+COUNTY_FIPS = {"franklin_va": "51067"}
 
 
 def fetch(field_id, fips):
