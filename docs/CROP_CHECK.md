@@ -27,3 +27,22 @@ Key: ✅ the source supports it · ⚠️ the source doesn't say; it's our judgm
 - Every **nitrogen-fixing**, **root depth**, **planting month** and **frost** value is now either backed by a page in a source or flagged above.
 - Most **water-need** and **heat-tolerance** ratings are our relative judgment. The one direct source statement is that sorghum handles heat and drought better than corn. The site already says "Crop trait ratings are our reading of extension sources" in every "What we don't know" box.
 - A stronger source for water use would be a crop water-use table, for example from the FAO crop information pages or a VCE irrigation guide. That's a good next step if there's time.
+
+## Added Nov 14, 2026 (AI-researched, verified=no): check these first
+
+15 crops were added with one extension or SARE source each. These values had **no supporting line in the source** and are best guesses; a team member must confirm or fix them before relying on them:
+
+- cotton: end month 10, forage low
+- peanut: root depth medium, forage low
+- oats_spring and winter_oats: root depth; oats_spring start month 3 (Virginia inferred from a Pennsylvania date)
+- sunflower: Virginia months, heat medium, forage low
+- canola: end month 6, water medium, root medium, forage low
+- tobacco: months 5 to 9 and frost low (no Virginia calendar found; ask the Southern Piedmont AREC)
+- pearl_millet: root depth medium, heat high (inferred)
+- red_clover: water medium, end month 10, heat low (inferred)
+- hairy_vetch: root depth medium, heat low
+- triticale: root depth, heat
+- buckwheat: forage low, the exact June to August window
+
+The 10 new rotations come from the same sources. The weakest are canola_wheat (summer crops adapted) and potato_grain_alfalfa (adapted from a southern Idaho sequence without sugar beet).
+

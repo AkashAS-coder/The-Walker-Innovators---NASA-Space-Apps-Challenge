@@ -81,7 +81,7 @@ test('Nevada field only gets western rotations, with no soybean', () => {
   const results = sc.compareRotations(rotations, 'alfalfa_then_corn', field, weights);
   assert.strictEqual(results.length, 3);
   for (const r of results) {
-    assert.strictEqual(r.rotation.region, 'west');
+    assert.ok(['west', 'any'].includes(r.rotation.region), `${r.rotation.id} is an eastern rotation`);
     assert.ok(!r.rotation.years.some(y => [y.main, y.winter].some(c => c && c.id.startsWith('soybean'))),
               `${r.rotation.id} includes soybean`);
   }

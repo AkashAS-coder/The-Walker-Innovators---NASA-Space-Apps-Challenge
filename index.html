@@ -262,7 +262,10 @@
       <header class="page-head">
         <h2>Tell us about your field</h2>
       </header>
-      <div class="finder panel-card">
+      <p id="demo-banner" class="demo-banner" hidden>Demo mode: two sample fields with saved NASA data. Turn it off at the bottom of the page.</p>
+
+      <div id="finder" class="finder panel-card">
+        <h3>Add a field</h3>
         <form id="find-form" class="find-row" role="search">
           <label for="find-address" class="sr-only">Your address or town</label>
           <input id="find-address" type="search" placeholder="Type your address or town" autocomplete="street-address">
@@ -275,9 +278,15 @@
 
       <div class="two-col panel-card">
         <div class="field-form">
-          <label for="field-select">Field being checked</label>
+          <label for="field-select">Your fields</label>
           <select id="field-select"></select>
           <p id="field-place" class="small muted"></p>
+
+          <label for="field-name" id="field-name-label">Field name</label>
+          <div class="name-row">
+            <input id="field-name" type="text" maxlength="40" placeholder="For example: North 40">
+            <button type="button" class="btn btn-ghost btn-small" id="remove-field" hidden>Remove</button>
+          </div>
 
           <label for="rotation-select">What you grow now</label>
           <select id="rotation-select"></select>
@@ -588,6 +597,7 @@
   <footer class="bottom">
     <div class="wrap">
       <p><strong>This supports your decision. It does not replace your judgment or your extension agent.</strong></p>
+      <p><button type="button" class="btn btn-ghost demo-toggle" id="demo-toggle">Try demo mode (sample fields)</button></p>
       <p class="small">Made by The Walker Innovators for the NASA Space Apps Challenge 2026, "Field Shift: Adapting Farms with NASA Data." Photos: USDA NRCS (public domain). Map data © OpenStreetMap contributors.</p>
     </div>
   </footer>

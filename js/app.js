@@ -59,10 +59,15 @@ async function init() {
     showError(err);
     return;
   }
+  state.myFields = listFields();
   buildInputs();
   buildMap();
-  await selectField(state.fields[0].id);
+  // Open the farmer's last field; with none yet, start on "Add field".
+  if (state.myFields.length) await pickPoint(state.myFields[0].lat, state.myFields[0].lon);
+  else startAdding();
+  state.ready = true;
   $('loading').hidden = true;
+  showPage();
 }
 
 function showError(err) {
@@ -76,10 +81,13 @@ function showError(err) {
 // ---------- inputs ----------
 
 function buildInputs() {
-  $('field-select').innerHTML = state.fields
-    .map(f => `<option value="${f.id}">${esc(f.name)} (${esc(f.place)})</option>`).join('');
-  $('field-select').addEventListener('change', e =>
-    (state.picked && e.target.value === state.picked.id ? showField(state.picked) : selectField(e.target.value)));
+  $('field-select').addEventListener('change', e => {
+    const id = e.target.value;
+    const mine = state.myFields.find(f => f.id === id);
+    if (id === '__add') startAdding();
+    else if (mine) { stopAdding(); pickPoint(mine.lat, mine.lon); }
+    else { stopAdding(); selectField(id); }
+  });
 
   $('rotation-select').innerHTML = state.rotations
     .map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
@@ -129,11 +137,12 @@ function buildMap() {
   });
   L.control.layers({ Satellite: satellite, 'Street map': streets }).addTo(map);
   const markers = state.fields.map(f =>
-    L.marker([f.lat, f.lon]).addTo(map)
+    L.marker([f.lat, f.lon])
       .bindTooltip(`Demo field: ${f.name}<br>${f.place}`)
       .on('click', () => { $('field-select').value = f.id; selectField(f.id); }));
-  state.mapBounds = L.featureGroup(markers).getBounds().pad(0.3);
-  map.fitBounds(state.mapBounds);
+  state.demoLayer = L.featureGroup(markers); // shown only in demo mode
+  state.mapBounds = state.demoLayer.getBounds().pad(0.3);
+  map.fitBounds([[US.south, US.west], [US.north, US.east]]);
   map.on('click', e => pickPoint(e.latlng.lat, e.latlng.lng));
   state.map = map;
 }
@@ -154,6 +163,17 @@ async function selectField(id) {
     } catch (err) { showError(err); return; }
   }
   showField(field);
+  fillFieldSelect();
+}
+
+// What CropScape recorded on the field on screen, year by year.
+function showHistory() {
+  const c = state.cache[state.field.id];
+  $('history').innerHTML = c.history
+    ? Object.entries(c.history).map(([yr, crop]) =>
+        `<div class="yr"><b>${yr}</b><span>${esc(crop || 'missing')}</span></div>`).join('')
+    : state.field.picked && !c.historyState ? '<p class="muted">Loading crop history…</p>'
+    : '<p class="muted">Crop history could not be loaded for this spot (it loads on the live site only).</p>';
 }
 
 // Fills the field page from a field that is already loaded in state.cache
@@ -176,12 +196,7 @@ function showField(field) {
   const texture = [...SOIL_TEXTURES].sort((a, b) => b.length - a.length)
     .find(t => surveyed.endsWith(t.toLowerCase())) || 'Loam';
   $('texture-select').value = texture;
-  const history = state.cache[id].history;
-  $('history').innerHTML = history
-    ? Object.entries(history).map(([yr, crop]) =>
-        `<div class="yr"><b>${yr}</b><span>${esc(crop || 'missing')}</span></div>`).join('')
-    : field.picked ? '<p class="muted">Crop history is only saved for the two demo fields, not for spots you pick.</p>'
-                   : '<p class="muted">No crop history saved for this field.</p>';
+  showHistory();
   $('texture-hint').textContent = soil && soil.texdesc ? `USDA soil survey says: ${soil.texdesc}. Change it if your field differs.`
                        : soil ? 'The soil survey lists no texture at this exact spot. Pick your soil texture.'
                                        : 'No soil survey data saved for this field. Pick your soil texture.';
@@ -236,8 +251,47 @@ async function fetchSoil(lat, lon) {
 
 // Loads NASA weather and the soil survey for any spot in the lower 48, then shows it.
 // Satellite greenness is not loaded here: it takes several minutes per spot.
-async function pickPoint(rawLat, rawLon) {
-  const lat = Number(rawLat.toFixed(3)), lon = Number(rawLon.toFixed(3)); // about 100 m
+// MODIS greenness (MOD13Q1) for a picked spot: the last two full years, one image every 16 days.
+// The ORNL service sends at most 10 images per request and each takes about 40 seconds,
+// so the requests run side by side in the background while the farmer reads the rest.
+const MODIS_URL = 'https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset';
+const NDVI_YEARS = [2023, 2024];
+async function fetchNdvi(lat, lon) {
+  const dates = NDVI_YEARS.flatMap(y => Array.from({ length: 23 }, (_, i) => `A${y}${String(1 + 16 * i).padStart(3, '0')}`));
+  const chunks = [];
+  for (let i = 0; i < dates.length; i += 10) chunks.push(dates.slice(i, i + 10));
+  const getChunk = async c => {
+    try {
+      const res = await fetch(`${MODIS_URL}?latitude=${lat}&longitude=${lon}&band=250m_16_days_NDVI` +
+        `&startDate=${c[0]}&endDate=${c[c.length - 1]}&kmAboveBelow=0&kmLeftRight=0`, { headers: { Accept: 'application/json' } });
+      return res.ok ? res.json() : null;
+    } catch (err) { return null; }
+  };
+  // Try each chunk twice. A chunk that still fails shows up as missing images, never filled in.
+  const parts = await Promise.all(chunks.map(async c => (await getChunk(c)) || getChunk(c)));
+  const values = {};
+  let scale = 0.0001;
+  for (const part of parts.filter(Boolean)) {
+    scale = Number(part.scale) || scale;
+    for (const item of part.subset || []) values[item.calendar_date] = item.data[0];
+  }
+  return Object.keys(values).length ? { values, scale, fill_value: -3000, source: MODIS_URL } : null;
+}
+
+// Crop history from USDA CropScape, through our Netlify Function (CropScape blocks web pages).
+// Only works on the live Netlify site; on a plain local server it quietly returns null.
+async function fetchHistory(lat, lon) {
+  try {
+    const res = await fetch(`/.netlify/functions/cropscape?lat=${lat}&lon=${lon}`);
+    return res.ok ? (await res.json()).history : null;
+  } catch (err) { return null; }
+}
+
+// Loads NASA weather and the soil survey for any spot in the lower 48, then shows it.
+// Crop history and satellite greenness keep loading in the background and update the page.
+// name: the name for a new field (otherwise the name box or "Field N").
+async function pickPoint(rawLat, rawLon, name) {
+  const lat = Number(Number(rawLat).toFixed(3)), lon = Number(Number(rawLon).toFixed(3)); // about 100 m
   if (lat < US.south || lat > US.north || lon < US.west || lon > US.east) {
     findMsg('That spot is outside the lower 48 states. This tool\'s crop list and soil survey cover only those.', true);
     return false;
@@ -250,37 +304,123 @@ async function pickPoint(rawLat, rawLon) {
     findMsg('Getting 21 years of NASA weather and your soil survey…');
     try {
       const [power, soil] = await Promise.all([fetchPower(lat, lon), fetchSoil(lat, lon)]);
-      state.cache[id] = { ind: computeFieldIndicators(power, null), soil, history: null };
+      state.cache[id] = { power, ind: computeFieldIndicators(power, null), soil, history: null, ndviState: 'loading' };
+      loadExtras(id, lat, lon);
     } catch (err) {
       console.error('pick point', err);
-      if (ticket === state.pickTicket) findMsg('Couldn\'t reach NASA right now. Try again, or try a demo field.', true);
+      if (ticket === state.pickTicket) findMsg('Couldn\'t reach NASA right now. Try again in a minute.', true);
       return false;
     }
   }
   if (ticket !== state.pickTicket) return false;
+
+  // Which of the farmer's fields is this? A new one when adding; otherwise moving a click
+  // moves the field on screen; a spot already saved just opens that field.
+  let mine = state.myFields.find(f => f.id === id);
+  if (!mine) {
+    const current = state.field && state.field.picked && !state.adding
+      ? state.myFields.find(f => f.id === state.field.id) : null;
+    if (current) Object.assign(current, { id, lat, lon });
+    else {
+      const typed = $('field-name').value.trim();
+      state.myFields.unshift({ id, lat, lon, name: name || typed || `Field ${state.myFields.length + 1}` });
+    }
+    mine = state.myFields.find(f => f.id === id);
+    saveFields(state.myFields);
+  }
+  stopAdding();
   const region = lon < DRY_WEST_LON ? 'west' : 'east';
   const field = {
-    id, picked: true, name: 'Your field', place: 'Spot you picked', lat, lon, region,
+    id, picked: true, name: mine.name, place: mine.name, lat, lon, region,
     irrigated: false, sells_forage: false,
     default_rotation: state.rotations.find(r => r.region === region || r.region === 'any').id,
-    note: 'A spot you picked. Weather (NASA POWER) and soil (USDA soil survey) were loaded just now. ' +
-          'Satellite greenness and crop history are only saved for the two demo fields.',
+    note: 'Weather (NASA POWER) and soil (USDA soil survey) for this spot were loaded live. ' +
+          'Crop history (USDA CropScape) and satellite greenness (MODIS) load in the background.',
   };
-  // Show the picked spot at the top of the field list.
-  let option = $('field-select').querySelector('option[data-picked]');
-  if (!option) {
-    option = document.createElement('option');
-    option.dataset.picked = '1';
-    $('field-select').prepend(option);
-  }
-  option.value = id;
-  option.textContent = `Your field (${lat}, ${lon})`;
-  $('field-select').value = id;
-  state.picked = field;
   showField(field);
-  findMsg(state.cache[id].soil ? 'Done. Not the right spot? Click your field on the map.'
+  fillFieldSelect();
+  findMsg(state.cache[id].soil ? 'Done. Not the right spot? Click your field on the map to move it.'
                                : 'Done, but the USDA soil survey has no record here (water, a town, or outside the US). Click right on your field, or pick your soil type on step 4.');
   return true;
+}
+
+// Background loads for a picked spot. When each one arrives, redraw if that field is on screen.
+async function loadExtras(id, lat, lon) {
+  const onScreen = () => state.field && state.field.id === id;
+  fetchHistory(lat, lon).then(history => {
+    state.cache[id].history = history;
+    state.cache[id].historyState = history ? 'done' : 'failed';
+    if (onScreen()) showHistory();
+  });
+  const ndvi = await fetchNdvi(lat, lon);
+  const c = state.cache[id];
+  c.ndviState = ndvi ? 'done' : 'failed';
+  if (ndvi) c.ind = computeFieldIndicators(c.power, ndvi);
+  if (onScreen()) render();
+}
+
+// ---------- My fields: the farmer's own named fields (kept in this browser) ----------
+
+function fillFieldSelect() {
+  const mine = state.myFields.map(f => `<option value="${f.id}">${esc(f.name)}</option>`);
+  const demo = state.demo ? state.fields.map(f => `<option value="${f.id}">Demo: ${esc(f.name)}</option>`) : [];
+  $('field-select').innerHTML = [...mine, ...demo, '<option value="__add">+ Add field</option>'].join('');
+  $('field-select').value = state.adding || !state.field ? '__add' : state.field.id;
+  const own = state.field && state.field.picked && !state.adding;
+  $('field-name').value = state.adding ? `Field ${state.myFields.length + 1}` : state.field ? state.field.name : '';
+  $('field-name').disabled = !(own || state.adding);
+  $('field-name-label').textContent = state.adding ? 'Name this field' : 'Field name';
+  $('remove-field').hidden = !own;
+}
+
+function startAdding() {
+  state.adding = true;
+  $('finder').hidden = false;
+  fillFieldSelect();
+  findMsg('Type an address, use your location, or click your field on the map.');
+  $('find-address').focus();
+}
+
+function stopAdding() {
+  state.adding = false;
+  $('finder').hidden = state.myFields.length > 0 || state.demo;
+}
+
+function renameField(text) {
+  const mine = state.field && state.myFields.find(f => f.id === state.field.id);
+  if (!mine || state.adding) return;
+  mine.name = text.trim() || mine.name;
+  state.field.name = state.field.place = mine.name;
+  saveFields(state.myFields);
+  const option = $('field-select').querySelector(`option[value="${mine.id}"]`);
+  if (option) option.textContent = mine.name;
+}
+
+function removeField() {
+  if (!state.field || !state.field.picked) return;
+  if (!confirm(`Remove "${state.field.name}" from your fields? Saved checks stay on My farm.`)) return;
+  state.myFields = state.myFields.filter(f => f.id !== state.field.id);
+  saveFields(state.myFields);
+  state.field = null;
+  if (state.myFields.length) pickPoint(state.myFields[0].lat, state.myFields[0].lon);
+  else startAdding();
+}
+
+// ---------- Demo mode: two sample fields with saved data, for judges and first-time visitors ----------
+
+function setDemo(on) {
+  state.demo = on;
+  $('demo-toggle').textContent = on ? 'Turn off demo mode' : 'Try demo mode (sample fields)';
+  $('demo-banner').hidden = !on;
+  if (state.map && state.demoLayer) on ? state.demoLayer.addTo(state.map) : state.demoLayer.remove();
+  if (on) {
+    stopAdding();
+    selectField(state.fields[0].id).then(() => { fillFieldSelect(); location.hash = 'field'; showPage(); });
+  } else {
+    if (state.field && !state.field.picked) state.field = null;
+    if (state.myFields.length) pickPoint(state.myFields[0].lat, state.myFields[0].lon);
+    else startAdding();
+  }
 }
 
 async function findAddress(text) {
@@ -412,8 +552,10 @@ function drawNdviChart() {
   const ndvi = state.cache[state.field.id].ind.ndvi;
   if (state.charts.ndvi) { state.charts.ndvi.destroy(); state.charts.ndvi = null; }
   if (!ndvi.available) {
-    $('ndvi-note').textContent = state.field.picked
-      ? 'Satellite greenness is not loaded for spots you pick: it takes several minutes to download. Try a demo field to see it. Bare months below come from the crop calendar.'
+    const st = state.cache[state.field.id].ndviState;
+    $('ndvi-note').textContent = st === 'loading'
+      ? 'Loading satellite greenness for this spot (a minute or two). This page updates by itself.'
+      : st === 'failed' ? 'The satellite greenness service did not answer. Bare months come from the crop calendar instead.'
       : 'Satellite greenness data is not saved for this field yet. Run src/fetch_ndvi.py.';
     return;
   }
@@ -588,7 +730,13 @@ const STEPS = ['field', 'soil', 'year', 'compare'];
 function showPage() {
   // Old #account links open the sign-in pop-up over the home page.
   if (location.hash === '#account') { history.replaceState(null, '', '#home'); openSignIn(); }
-  const id = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+  let id = PAGES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+  // Steps 2 to 4 need a field. Send the farmer back to step 1 until they add one.
+  if (state.ready && !state.field && ['soil', 'year', 'compare'].includes(id)) {
+    history.replaceState(null, '', '#field');
+    id = 'field';
+    findMsg('Add your field first.', true);
+  }
   document.querySelectorAll('.page').forEach(p => { p.hidden = p.dataset.page !== id; });
   document.querySelectorAll('[data-nav]').forEach(a =>
     a.classList.toggle('on', a.dataset.nav.split(' ').includes(id)));
@@ -605,7 +753,8 @@ function showPage() {
     state.map.invalidateSize();
     // Keep the farmer's own spot in view; otherwise show the two demo fields.
     if (state.field && state.field.picked) state.map.setView([state.field.lat, state.field.lon], Math.max(state.map.getZoom(), 14));
-    else state.map.fitBounds(state.mapBounds);
+    else if (state.field) state.map.fitBounds(state.mapBounds);
+    else state.map.fitBounds([[US.south, US.west], [US.north, US.east]]);
   }
   Object.values(state.charts).forEach(c => c && c.resize());
   if (id === 'myfarm') renderSaved();
@@ -672,9 +821,9 @@ function renderSaved() {
 // Puts a saved check's answers back into the inputs and opens the comparison.
 async function openCheck(id) {
   const c = listChecks().find(x => x.id === id);
-  if (!c || !state.field) return; // data still loading
+  if (!c || !state.ready) return; // data still loading
   if (c.fieldId.startsWith('pt_')) {
-    if (!(await pickPoint(c.lat, c.lon))) { location.hash = 'field'; return; }
+    if (!(await pickPoint(c.lat, c.lon, c.fieldName))) { location.hash = 'field'; return; }
   } else {
     $('field-select').value = c.fieldId;
     await selectField(c.fieldId);
@@ -934,6 +1083,9 @@ $('saved-list').addEventListener('click', e => {
 });
 $('find-form').addEventListener('submit', e => { e.preventDefault(); findAddress($('find-address').value); });
 $('find-me').addEventListener('click', findMe);
+$('field-name').addEventListener('input', e => renameField(e.target.value));
+$('remove-field').addEventListener('click', removeField);
+$('demo-toggle').addEventListener('click', () => setDemo(!state.demo));
 window.addEventListener('hashchange', showPage);
 showPage();
 init();

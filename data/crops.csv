@@ -9,3 +9,18 @@ cereal_rye,Cereal rye (cover),cover,grass,cool,10,4,low,low,high,medium,no,mediu
 crimson_clover,Crimson clover (cover),cover,legume,cool,9,4,low,low,medium,medium,yes,medium,https://www.sare.org/publications/managing-cover-crops-profitably/legume-cover-crops/crimson-clover/,no
 sorghum_sudangrass,Sorghum-sudangrass (summer forage),forage,grass,warm,6,10,low,high,low,deep,no,high,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/sorghum-sudangrass/,no
 forage_radish,Forage radish (cover),cover,brassica,cool,8,12,low,low,medium,deep,no,low,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/brassicas-and-mustards/,no
+cotton,Cotton,cash,mallow,warm,5,10,medium,high,low,deep,no,low,https://www.sites.ext.vt.edu/newsletter-archive/cotton-production-guide/2016.pdf,no
+peanut,Peanut,cash,legume,warm,5,10,medium,medium,low,medium,yes,low,https://arec.vaes.vt.edu/content/dam/arec_vaes_vt_edu/tidewater/2025-production-guides/2025%20Peanut%20Production%20Guide%202025SPES-652NPspread.pdf,no
+barley,Barley (winter grain),cash,grass,cool,10,6,low,medium,medium,deep,no,high,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/barley/,no
+oats_spring,Oats (spring grain),cash,grass,cool,3,7,medium,low,medium,medium,no,high,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/oats/,no
+sunflower,Sunflower (oilseed),cash,aster,warm,5,9,medium,medium,medium,deep,no,low,https://ndsu.edu/agriculture/sites/default/files/2023-12/a1995.pdf,no
+canola,Canola (winter),cash,brassica,cool,9,6,medium,low,medium,medium,no,low,https://publications.ca.uky.edu/sites/publications.ca.uky.edu/files/canola.pdf,no
+tobacco,Tobacco (flue-cured),cash,nightshade,warm,5,9,low,medium,low,shallow,no,low,https://fieldreport.caes.uga.edu/publications/B892/irrigating-tobacco/,no
+potato,Potato,cash,nightshade,cool,3,7,high,low,medium,shallow,no,low,https://objects.lib.uidaho.edu/uiext/uiext31414.pdf,no
+pearl_millet,Pearl millet (summer forage),forage,grass,warm,5,9,low,high,low,medium,no,high,https://publications.ca.uky.edu/sites/publications.ca.uky.edu/files/AGR231.pdf,no
+red_clover,Red clover (forage/hay),forage,legume,perennial,3,10,medium,low,high,deep,yes,high,https://www.sare.org/publications/managing-cover-crops-profitably/legume-cover-crops/red-clover/,no
+hairy_vetch,Hairy vetch (cover),cover,legume,cool,9,5,medium,low,high,medium,yes,low,https://www.sare.org/publications/managing-cover-crops-profitably/legume-cover-crops/hairy-vetch/,no
+winter_oats,Oats (fall cover),cover,grass,cool,9,12,medium,low,low,medium,no,high,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/oats/,no
+triticale,Triticale (cover/forage),forage,grass,cool,9,5,low,low,medium,medium,no,high,https://bookstore.ksre.ksu.edu/download/triticale-in-kansas_MF2227,no
+buckwheat,Buckwheat (summer cover),cover,buckwheat,warm,6,8,medium,medium,low,shallow,no,low,https://www.sare.org/publications/managing-cover-crops-profitably/nonlegume-cover-crops/buckwheat/,no
+austrian_winter_pea,Austrian winter pea (cover),cover,legume,cool,10,4,low,low,medium,shallow,yes,high,https://www.sare.org/publications/managing-cover-crops-profitably/legume-cover-crops/field-peas/,no

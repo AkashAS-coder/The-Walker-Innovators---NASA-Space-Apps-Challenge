@@ -661,3 +661,19 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
   .find-row .btn { flex: 1 1 auto; }
   .map { height: 340px; }
 }
+
+/* ---------- My fields: name box, demo banner, demo button in the footer ---------- */
+.finder h3 { margin: 0 0 .7rem; }
+.name-row { display: flex; gap: .5rem; align-items: center; margin-bottom: .8rem; }
+.name-row input {
+  flex: 1; min-height: 44px; font: inherit; padding: 0 .7rem;
+  border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+}
+.name-row input:disabled { background: transparent; border-color: transparent; padding-left: 0; font-weight: 600; }
+.btn-small { min-height: 44px; padding: 0 1rem; }
+.demo-banner {
+  background: var(--soil); color: #fff; font-weight: 600; padding: .6rem 1rem;
+  border-radius: var(--radius); margin: 0 0 1rem;
+}
+.bottom .demo-toggle { color: #efe4d2; border-color: #efe4d2; }
+.bottom .demo-toggle:hover { background: rgba(255, 255, 255, .1); }

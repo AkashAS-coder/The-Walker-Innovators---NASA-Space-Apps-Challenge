@@ -60,3 +60,21 @@ function clearCloudChecks() {
     localStorage.setItem(STORE_KEY, JSON.stringify(listChecks().filter(c => !c.cloud)));
   } catch (err) { /* nothing to do */ }
 }
+
+// The farmer's own fields: [{ id, name, lat, lon }], newest first. Only the name and a
+// location rounded to about 100 m are kept, in this browser. Typed addresses are never saved.
+const FIELDS_KEY = 'fieldshift.fields.v1';
+
+function listFields() {
+  try {
+    return JSON.parse(localStorage.getItem(FIELDS_KEY)) || [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveFields(fields) {
+  try {
+    localStorage.setItem(FIELDS_KEY, JSON.stringify(fields));
+  } catch (err) { /* storage blocked: fields last until the page closes */ }
+}

@@ -16,3 +16,13 @@ soy_only,Soybean every year,east,soybean>bare,Full-season soybean every summer w
 corn_soy_wheat,Corn then soybean then wheat and double-crop soybean,east,corn>bare;soybean>winter_wheat;soybean_double>bare,Three-year cycle. Wheat is planted after soybean and double-crop soybean follows the wheat.
 wheat_soy_yearly,Wheat and double-crop soybean every year,east,soybean_double>winter_wheat,Winter wheat then soybean planted right after the wheat harvest every year.
 hay_field,Alfalfa hay field,any,alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa;alfalfa>alfalfa,A standing alfalfa hay field cut for hay every year.
+peanut_cotton_corn,Peanut then cotton then corn,east,peanut>barley;cotton>cereal_rye;corn>cereal_rye,Three-year peanut rotation with grass crops and winter grain covers.
+tobacco_rye_corn,Tobacco with rye cover then corn,east,tobacco>cereal_rye;corn>winter_wheat;soybean_double>bare,Tobacco followed by a rye cover and grain years to break disease cycles.
+vetch_before_corn,Hairy vetch ahead of corn,east,soybean>hairy_vetch;corn>cereal_rye,A legume cover after soybean supplies nitrogen to the next corn crop.
+wheat_red_clover_corn,Red clover after wheat then corn,any,corn>winter_wheat;red_clover>red_clover;corn>cereal_rye,Clover sown into standing wheat and kept as hay or cover before corn.
+wheat_buckwheat,Buckwheat after wheat harvest,east,corn>winter_wheat;buckwheat>cereal_rye,A short summer buckwheat cover in the gap after wheat harvest.
+cotton_winter_pea,Cotton with Austrian winter pea,east,cotton>austrian_winter_pea;cotton>cereal_rye,A winter legume cover supplying nitrogen to cotton.
+potato_grain_alfalfa,Potato with grain and alfalfa,west,potato>winter_wheat;alfalfa>alfalfa;alfalfa>alfalfa,Irrigated western potato rotation with a cereal and alfalfa between potato years.
+canola_wheat,Winter canola in a wheat rotation,east,grain_sorghum>canola;soybean_double>winter_wheat;soybean_double>bare,Winter canola breaks up back-to-back wheat.
+pearl_millet_triticale,Summer millet and winter triticale forage,any,pearl_millet>triticale;pearl_millet>triticale,Year-round forage from a summer annual and a winter annual.
+sunflower_wheat,Sunflower and wheat,any,sunflower>winter_wheat;corn>cereal_rye,Deep-rooted sunflower then wheat and corn with a rye cover.

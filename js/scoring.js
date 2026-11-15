@@ -373,7 +373,7 @@ function buildExplanation(result, current, field, weights) {
       : 'Western rotations were built from crops CropScape records near this field, not from a local extension guide.');
   }
   if (field.picked) {
-    unknowns.push('This spot was picked on the map: we have no crop history for it, and the region (East or dry West) comes only from which side of the 100th meridian it sits on.');
+    unknowns.push('This field was picked on the map, so its region (East or dry West) comes only from which side of the 100th meridian it sits on.');
   }
   if (field.ind.missingDays) unknowns.push(`${field.ind.missingDays} days of weather data were missing and were skipped.`);
   unknowns.push('Yields under your soil and weather are not modeled.');
