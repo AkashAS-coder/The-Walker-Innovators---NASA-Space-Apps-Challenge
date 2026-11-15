@@ -1,62 +1,69 @@
 # 3-minute demo script
 
-For the live demo and the video. Every number below is what the app shows for the Franklin County demo field with the default settings on Nov 14, 2026. If the data or rules change, re-read the numbers from the screen before presenting.
+For the live demo and the video. Every number below is what the live app (https://cresstech.netlify.app) showed for the Franklin County, Virginia example field with the default sliders on Nov 15, 2026. If the data or rules change, re-read the numbers from the screen before presenting.
 
-## 0:00 – 0:30 · The problem
+The app has four steps across the top: **1 Your field, 2 Soil check, 3 Your year, 4 Compare**. There is also a **Proof** page and an **Ask AI** page in the menu.
+
+## 0:00 – 0:25 · The problem
 
 > "Soil wears out slowly, and you can't see it from the tractor. Topsoil washes off bare ground in a heavy rain. Organic matter drops when nothing is growing all winter. By the time yields fall, the damage is years old."
 
-Open the app and click **Check my field**. Show how a farmer adds their own land in a few seconds: name it ("North 40"), then type a town (for example "Martinsville, VA") or scroll the satellite map and click a field. The app pulls 21 years of NASA POWER weather and the USDA soil survey for that exact spot in about 2 seconds. Crop history (CropScape) and MODIS satellite greenness keep loading in the background, and the page updates when they arrive (greenness takes a minute or two).
+Click **Check my field**. Show how a farmer adds their own land: type a town or scroll the satellite map and click a field. The app pulls 21 years of NASA POWER weather and the USDA soil survey for that spot. Then the field's crop record from USDA CropScape appears, and the crop cycle box starts on the closest match, with the note "From this field's crop record (USDA CropScape). Change it if wrong."
 
-> "Any farmer in the lower 48 can do this with their own fields, give each one a name, and switch between them. No account needed."
+> "Any farmer in the lower 48 can do this for their own fields. No account needed."
 
-Then scroll to the bottom of the page and click **Try demo mode (sample fields)**. It opens the Franklin County demo field, a real crop field picked from the USDA Cropland Data Layer, with all its data saved, so the walkthrough below works even if a NASA service is slow.
+Tested example: a field in Southampton County, VA (lat 36.65, lon −76.95) shows corn, peanuts and cotton from 2016 to 2025 and starts on "Peanut then cotton then corn". If the pin lands on a town, forest or water, the app says the record shows no field crops and asks the farmer to check the pin.
 
-## 0:30 – 1:15 · Step 1: Check your soil
+Then click **See an example Virginia field**. It opens the saved Franklin County field, a real crop field from the USDA Cropland Data Layer, straight on step 4. Everything for it is saved, so the rest of the demo works even if a NASA service is slow.
 
-Point at the headline: **"With what you grow now, your soil is covered for 86% of the heavy-rain season."** Then the equation:
+## 0:25 – 1:00 · The answer card
 
-> "USDA estimates soil erosion with one equation, RUSLE: soil loss equals rain power, times how easily the soil washes away, times slope, times cover, times conservation practices. For this field the USDA soil survey lists K at 0.24 on a 5% slope. Rain, soil and slope you can't change. Cover, the green C, is the one a farmer controls with the crop cycle."
+Point at the three boxes at the top of step 4:
 
-Point out the labels: K is from the soil survey; R and LS are stand-ins because NASA POWER is daily and slope length is unknown; P is unknown. "We don't invent the missing pieces, so we don't give a tons-per-acre number. These are risk signs, not a soil-loss prediction."
+- **Biggest risk now:** soil washing away; ground is bare in some years in January, when days with over 2 in (50 mm) of rain happen.
+- **Option worth a look:** "Sorghum then wheat and double-crop soybean", **83/100 fit against 56 now**, clears 3 of 3 warning signs.
+- **Check locally first:** double-crop soybean still growing in mid-November is after the usual first fall frost (Oct 30).
 
-Then the warning signs: **"3 of 4 soil warning signs are on."**
+> "Three lines a farmer can read in ten seconds: the risk, one option worth a look, and what to check before trusting it. Every number comes from NASA POWER, MODIS, the USDA soil survey or our crop table, and the scores come from written rules, not AI."
 
-> "This farm grows corn, then wheat with double-crop soybean. We read 21 years of NASA POWER weather and five years of MODIS satellite greenness for the 250-meter pixel around this spot. Satellites saw it with little plant cover in December, January and February."
+## 1:00 – 1:35 · Why: the soil check and the year
 
-Walk across the four tiles. Each one names its data source.
+Click **2 Soil check**. **3 of 4 soil warning signs are on** for what this farm grows now (corn, then wheat with double-crop soybean).
 
-- Soil washing away: bare ground in a heavy-rain month (NASA POWER).
-- Soil losing organic matter: living roots in only half of winters.
-- Nitrogen: OK, because soybean is a legume.
-- Thirsty crops: corn grows in May and June, when root-zone soil was drier than usual in 2021–2025.
+> "USDA estimates erosion with one equation, RUSLE: rain power times how easily the soil washes, times slope, times cover, times practices. Here the soil survey lists K at 0.24 on a 5% slope. Rain, soil and slope you can't change. Cover is the part a farmer controls with the crop cycle. We don't invent the missing pieces, so we give risk signs, not tons of soil lost."
 
-## 1:15 – 1:45 · Step 2: See the cycle
+Click **3 Your year**: the month strip (tan means bare) and the MODIS greenness chart. Satellites saw little plant cover in December, January and February.
 
-Scroll to the month strip and the greenness chart.
+## 1:35 – 2:15 · Compare, sliders and "I want to grow"
 
-> "Here's the cycle month by month. Tan means bare. The chart is what the satellite actually saw: green in summer, brown in winter. That bare winter window is when the soil is most exposed to erosion."
+Back on **4 Compare**: the current cycle covers the soil **86%** of the heavy-rain season; the sorghum option and "Wheat and double-crop soybean every year" (81) both reach **100%**.
 
-## 1:45 – 2:30 · Step 3: Compare fixes
+Move the **Forage** slider from 1 to 5: sorghum drops to 80 and "Cotton with Austrian winter pea" rises to 80. Set it back to 1.
 
-Point at the finding sentence and the three cards.
+> "The farmer's priorities change the ranking. Here the soil fix holds up even when they care more about hay."
 
-> "We compare what you grow now with the two rotations that best fit this field. Sorghum, then wheat and double-crop soybean, raises cover in the heavy-rain season from 86% to 100%, clears all three warning signs under our rules, and scores 83 against 56. These scores come from written rules, not AI, and they haven't been tested on real farms yet, so it's a starting point for the extension agent."
+On step 1, pick **Cotton** under "A crop you want to grow". Step 4 now shows **"How Cotton fits this field"**: in the ground May to October, inside the usual frost-free season (Apr 10 to Oct 30, NASA POWER); bare November to April when grown alone, and cereal rye or crimson clover can cover those months. The best option becomes "Cotton with Austrian winter pea", **79/100**. Set it back to "No preference".
 
-The third card is wheat and double-crop soybean every year (81). Move the **Forage** slider from 1 to 5: the ranking changes (sorghum 83 to 80, and cotton with Austrian winter pea moves into third at 80), but sorghum stays on top: "For this field, the soil fix holds up even when the farmer cares more about hay."
+Open "Evidence, benefits, limits, local checks" on one card: why suggested, evidence, benefits, what we don't know, what to check locally.
 
-Open "Evidence, benefits, what we don't know" on one card:
+Below the cards, point at **Your local experts** (shown for Virginia fields): the Virginia Cooperative Extension office finder and the Southern Piedmont research center in Blackstone.
 
-> "Every option shows why it was suggested, the evidence, the benefits, what we don't know, and what to check locally. For example, we only have 100 of 115 satellite images, and our crop water ratings still need an agronomist to check them."
+## 2:15 – 2:45 · Proof
 
-## 2:30 – 3:00 · Why trust it, and what's next
+Open **Proof** from the menu.
 
-Scroll to "Why we believe this".
+> "We can't measure erosion from space, so we tested the one part we can check: the dry-soil flag. For every month from 2005 to 2025 we compared NASA POWER soil wetness with the U.S. Drought Monitor for Franklin County. We caught **42 of 48** drought months and missed 6. We also flagged 62 months with no drought on record, and we show that too."
 
-> "The equation is USDA's own (Agriculture Handbook 703), and the warning signs come from published soil health advice from USDA NRCS, SARE and Virginia Extension, applied to real NASA data. No black box and no AI in the scores, just written rules you can read. It supports the farmer's decision and the extension agent's advice; it never tells anyone what to plant. Next: on-the-ground soil sensors to check what the satellite sees."
+Point at "What we have not proven": scores not tested on real farms, crop table not yet checked by an agronomist, no tons-of-soil-lost number.
+
+## 2:45 – 3:00 · Close
+
+Optional, if time: on **Ask AI**, ask "Which month is my field most bare?". Field Helper Buddy answers only from the results on screen, and the page says it can be wrong.
+
+> "It supports the farmer's decision and the extension agent's advice. It never tells anyone what to plant."
 
 ## Backup if the internet is down
 
-Record a full run of this script ahead of time and keep the video on the laptop and on a phone. If the Wi-Fi or a NASA service fails on stage, play the video.
+Record a full run of this script ahead of time (30 seconds or less for the submission video) and keep it on the laptop and a phone. If the Wi-Fi or a NASA service fails on stage, play the video.
 
-The demo fields read only saved data files, so the warning signs, month strip and three cards work offline from `python3 -m http.server 8000`. The map (Leaflet) and the charts (Chart.js) load from the internet, so they will be missing offline; picking your own spot needs the internet too. Turn on demo mode instead and keep a screenshot of the greenness chart ready.
+The example field reads only saved files, so steps 2 to 4 and the Proof page work offline from `python3 -m http.server 8000`. The map, the charts, picking your own spot, crop history, sign-in and Ask AI need the internet (crop history and Ask AI only run on the Netlify site).

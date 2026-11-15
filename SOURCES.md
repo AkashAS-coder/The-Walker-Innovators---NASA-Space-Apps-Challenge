@@ -41,7 +41,7 @@ All from the USDA Natural Resources Conservation Service (US government work, pu
 | images/erosion.jpg | Sheet erosion in an area of Coto soils (USDA NRCS, 2019) | https://commons.wikimedia.org/wiki/File:Sheet_erosion_in_an_area_of_Coto_soils_(20190402-SR-NRCS-001).jpg |
 | images/cover-crop.jpg | Soybeans coming up in a rye cover crop, May 2016 (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Soybeans_coming_up_in_a_rye_cover_crop_May_2016_(29614917692).jpg |
 | images/residue.jpg | Corn in Residue with Healthy Soil (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Corn_in_Residue_with_Healthy_Soil_(9314025147).jpg |
-| images/soil-profiles.jpg | Three soil profiles taken in central Iowa, slightly vs severely eroded (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Three_soil_profile%27s_taken_in_Idaho.jpg |
+| images/soil-profiles.jpg | Three soil profiles taken in central Iowa, slightly vs severely eroded (USDA NRCS photo NRCSIA99352 by Lynn Betts; public domain). The Wikimedia file name says Idaho, but the photo's own description and its NRCS Iowa ("IA") photo number both say central Iowa, so the app says Iowa. | https://commons.wikimedia.org/wiki/File:Three_soil_profile%27s_taken_in_Idaho.jpg |
 
 The "Why cover matters" diagram on the How it works page is our own drawing (inline SVG).
 

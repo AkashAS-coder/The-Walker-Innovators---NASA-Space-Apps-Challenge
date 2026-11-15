@@ -203,7 +203,12 @@ function applyHistoryRotation() {
   $('rotation-note').textContent = '';
   if (!f || !f.picked || !c.history || state.rotationByFarmer[f.id]) return false;
   const match = matchRotation(c.history, state.rotations, f.region);
-  if (!match) return false;
+  if (!match) {
+    // The record has no field crops we know (for example forest, a town or water): say so instead of guessing quietly.
+    $('rotation-note').textContent = 'This spot\'s crop record (USDA CropScape) shows no field crops, for example forest, buildings or water. ' +
+      'Check that the pin is on your field, then pick what you grow.';
+    return false;
+  }
   f.default_rotation = match.id;
   $('rotation-select').value = match.id;
   $('rotation-note').textContent = 'From this field\'s crop record (USDA CropScape). Change it if wrong.';

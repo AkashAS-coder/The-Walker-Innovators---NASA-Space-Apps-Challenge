@@ -2,6 +2,8 @@
 
 The Walker Innovators · NASA Space Apps Challenge 2026 · Challenge: **Field Shift: Adapting Farms with NASA Data**
 
+**Live app (no login needed): https://cresstech.netlify.app**
+
 **Is your field's topsoil washing away?** A decision-support web page for farmers built around one scientific idea: **soil erosion risk**, organized around USDA's **Revised Universal Soil Loss Equation (RUSLE)** framework: soil loss A = R (rain erosivity) × K (soil erodibility) × LS (slope) × C (cover) × P (conservation practices). We fill in each factor with real data where we have it (K from the USDA soil survey, heavy rain from NASA POWER, cover from MODIS NDVI and the crop calendar) and say plainly where we do not. Cover (C) is the one factor a crop rotation changes, so that is what the three options are compared on. We use RUSLE's factors as risk indicators only: the site does not calculate or predict tons of soil lost per acre.
 
 Pick a field and tell it what you grow now. It reads 21 years of NASA data for that field and checks **four soil warning signs**: soil washing away (bare ground in heavy-rain months), soil losing organic matter (winters with no living roots), nitrogen running down (no legume), and thirsty crops in drying months. Then it compares three crop rotations side by side: your current one and the two that best fit your field and priorities, each showing which warning signs it clears under our rules. Each option shows **why it was suggested, the evidence, the benefits, what we don't know, and what to check locally**.
