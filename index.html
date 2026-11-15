@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%228%22 fill=%22%235b3a21%22/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/style.css?v=20261114-13">
+  <link rel="stylesheet" href="css/style.css?v=20261114-14">
 </head>
 <body>
   <!-- Top navigation: one link per page. app.js shows one page at a time from the #hash. -->
@@ -140,36 +140,97 @@
       <div class="diagram-card">
         <h3>Why cover matters</h3>
         <!-- Our own drawing: the same rain on a bare slope and a covered slope. -->
-        <svg class="diagram" viewBox="0 0 640 230" role="img" aria-labelledby="dg-title dg-desc">
-          <title id="dg-title">Rain on bare soil versus covered soil</title>
-          <desc id="dg-desc">Left: rain hits bare soil on a slope and carries soil downhill. Right: rain lands on plants, soaks in, and roots hold the soil.</desc>
-          <g class="rain">
-            <line x1="40" y1="20" x2="34" y2="44"/><line x1="90" y1="14" x2="84" y2="38"/><line x1="140" y1="22" x2="134" y2="46"/>
-            <line x1="190" y1="12" x2="184" y2="36"/><line x1="240" y1="20" x2="234" y2="44"/><line x1="280" y1="10" x2="274" y2="34"/>
-            <line x1="360" y1="20" x2="354" y2="44"/><line x1="410" y1="14" x2="404" y2="38"/><line x1="460" y1="22" x2="454" y2="46"/>
-            <line x1="510" y1="12" x2="504" y2="36"/><line x1="560" y1="20" x2="554" y2="44"/><line x1="600" y1="10" x2="594" y2="34"/>
-          </g>
-          <!-- bare slope -->
-          <path class="soil" d="M10 90 L310 150 L310 200 L10 200 Z"/>
-          <path class="runoff" d="M40 100 C110 112 170 128 300 150"/>
-          <circle class="clod" cx="120" cy="114" r="4"/><circle class="clod" cx="190" cy="128" r="3"/><circle class="clod" cx="250" cy="139" r="4"/>
-          <path class="arrow" d="M230 160 L290 172 M280 164 L292 172 L280 178"/>
-          <!-- covered slope -->
-          <path class="soil" d="M330 90 L630 150 L630 200 L330 200 Z"/>
-          <g class="plants">
-            <path d="M370 96 q-8 -26 0 -40 q8 14 0 40"/><path d="M420 106 q-8 -26 0 -40 q8 14 0 40"/>
-            <path d="M470 116 q-8 -26 0 -40 q8 14 0 40"/><path d="M520 126 q-8 -26 0 -40 q8 14 0 40"/>
-            <path d="M570 136 q-8 -26 0 -40 q8 14 0 40"/>
-          </g>
-          <g class="roots">
-            <path d="M370 98 l-6 40 M370 98 l8 34 M370 98 l0 46"/><path d="M420 108 l-6 38 M420 108 l8 32 M420 108 l0 44"/>
-            <path d="M470 118 l-6 36 M470 118 l8 30 M470 118 l0 42"/><path d="M520 128 l-6 34 M520 128 l8 28 M520 128 l0 40"/>
-            <path d="M570 138 l-6 30 M570 138 l8 26 M570 138 l0 36"/>
-          </g>
-          <g class="soak"><path d="M445 150 l0 22 M439 166 l6 8 l6 -8"/><path d="M545 168 l0 18 M539 180 l6 8 l6 -8"/></g>
-          <text x="160" y="222" text-anchor="middle">Bare: rain carries soil off</text>
-          <text x="480" y="222" text-anchor="middle">Covered: rain soaks in, roots hold soil</text>
-        </svg>
+        <div class="cover-compare">
+          <figure class="cover-panel is-bare">
+            <figcaption class="cp-head"><span class="cp-badge" aria-hidden="true">✕</span> Bare soil</figcaption>
+            <svg class="diagram" viewBox="0 0 340 280" role="img" aria-labelledby="dgA-title dgA-desc">
+              <title id="dgA-title">Rain on bare soil</title>
+              <desc id="dgA-desc">Rain hits bare soil on a slope. Drops splash soil loose, and muddy water runs downhill carrying topsoil away.</desc>
+              <defs>
+                <clipPath id="clipA"><rect x="0" y="0" width="340" height="280" rx="12"/></clipPath>
+                <linearGradient id="skyA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd6ec"/><stop offset="1" stop-color="#eef5fb"/></linearGradient>
+                <path id="dropA" d="M0 -8 C3 -3 5 1 5 3 A5 5 0 0 1 -5 3 C-5 1 -3 -3 0 -8Z"/>
+                <marker id="arrA" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10Z" fill="#d9480f"/></marker>
+              </defs>
+              <g clip-path="url(#clipA)">
+                <g transform="translate(-10 -40)">
+                  <rect x="0" y="0" width="360" height="330" fill="url(#skyA)"/>
+                  <g class="cloud"><ellipse cx="60" cy="48" rx="60" ry="20"/><ellipse cx="150" cy="44" rx="55" ry="22"/><ellipse cx="240" cy="50" rx="60" ry="20"/><ellipse cx="330" cy="46" rx="50" ry="20"/></g>
+                  <g class="drop">
+                    <use href="#dropA" x="40" y="92"/><use href="#dropA" x="95" y="110"/><use href="#dropA" x="150" y="90"/><use href="#dropA" x="205" y="112"/><use href="#dropA" x="260" y="94"/><use href="#dropA" x="315" y="114"/>
+                    <use href="#dropA" x="65" y="132"/><use href="#dropA" x="180" y="134"/><use href="#dropA" x="290" y="140"/>
+                  </g>
+                  <!-- subsoil, then a thin band of topsoil that is left -->
+                  <path class="subsoil" d="M10 189 L350 269 L350 330 L10 330 Z"/>
+                  <path class="topsoil" d="M10 175 L350 255 L350 269 L10 189 Z"/>
+                  <!-- splashes where drops hit -->
+                  <g class="splash"><path d="M52 183 q8 -12 16 0"/><path d="M142 204 q8 -12 16 0"/><path d="M232 225 q8 -12 16 0"/></g>
+                  <g class="fleck"><circle cx="54" cy="174" r="2.5"/><circle cx="66" cy="172" r="2"/><circle cx="144" cy="195" r="2.5"/><circle cx="157" cy="193" r="2"/><circle cx="234" cy="216" r="2.5"/><circle cx="247" cy="214" r="2"/></g>
+                  <!-- muddy runoff along the surface -->
+                  <path class="runoff" d="M30 177 C110 194 200 214 350 252"/>
+                  <path class="runoff-shine" d="M60 182 C130 197 210 216 340 247"/>
+                  <g class="fleck"><circle cx="100" cy="193" r="2.5"/><circle cx="170" cy="208" r="2.5"/><circle cx="215" cy="219" r="2"/><circle cx="275" cy="233" r="2.5"/><circle cx="320" cy="244" r="2"/></g>
+                  <path class="arrow-bad" d="M95 160 L290 206" marker-end="url(#arrA)"/>
+                  <text class="lbl" x="150" y="160" transform="rotate(13.2 150 160)">Runoff carries soil away</text>
+                  <text class="lbl-in" x="30" y="228" transform="rotate(13.2 30 228)">Thin topsoil left</text>
+                  <text class="lbl-in small" x="40" y="300">Subsoil</text>
+                </g>
+              </g>
+            </svg>
+            <p>Rain knocks soil loose and washes it downhill.</p>
+          </figure>
+
+          <figure class="cover-panel is-good">
+            <figcaption class="cp-head"><span class="cp-badge" aria-hidden="true">✓</span> Covered soil</figcaption>
+            <svg class="diagram" viewBox="0 0 340 280" role="img" aria-labelledby="dgB-title dgB-desc">
+              <title id="dgB-title">Rain on soil covered by plants</title>
+              <desc id="dgB-desc">The same rain lands on plant leaves, soaks slowly into the ground, and roots hold a thick layer of topsoil in place.</desc>
+              <defs>
+                <clipPath id="clipB"><rect x="0" y="0" width="340" height="280" rx="12"/></clipPath>
+                <linearGradient id="skyB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd6ec"/><stop offset="1" stop-color="#eef5fb"/></linearGradient>
+                <path id="dropB" d="M0 -8 C3 -3 5 1 5 3 A5 5 0 0 1 -5 3 C-5 1 -3 -3 0 -8Z"/>
+                <g id="plantB">
+                  <path class="stem" fill="none" stroke="#2d6a27" stroke-width="3" stroke-linecap="round" d="M0 0 C1 -16 -1 -32 0 -50"/>
+                  <path class="leaf" fill="#3f9142" stroke="#1f5a20" stroke-width="1.2" d="M0 -12 C-12 -14 -22 -24 -24 -34 C-12 -33 -3 -25 0 -12Z"/>
+                  <path class="leaf" fill="#3f9142" stroke="#1f5a20" stroke-width="1.2" d="M0 -22 C12 -24 22 -34 24 -44 C12 -43 3 -35 0 -22Z"/>
+                  <path class="leaf" fill="#3f9142" stroke="#1f5a20" stroke-width="1.2" d="M0 -36 C-9 -40 -14 -48 -14 -56 C-5 -53 0 -46 0 -36Z"/>
+                  <path class="leaf light" fill="#7cc56b" stroke="#1f5a20" stroke-width="1.2" d="M0 -46 C2 -52 7 -58 12 -60 C11 -54 6 -48 0 -46Z"/>
+                </g>
+                <path id="rootsB" d="M0 2 C-3 14 -10 22 -14 36 M0 2 C1 16 2 30 0 46 M0 2 C4 12 10 20 15 32 M0 22 l-7 8 M1 32 l6 7 M-9 26 l-5 4"/>
+                <marker id="arrB" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10Z" fill="#1c64b8"/></marker>
+              </defs>
+              <g clip-path="url(#clipB)">
+                <g transform="translate(-370 -40)">
+                  <rect x="360" y="0" width="360" height="330" fill="url(#skyB)"/>
+                  <g class="cloud"><ellipse cx="420" cy="48" rx="60" ry="20"/><ellipse cx="510" cy="44" rx="55" ry="22"/><ellipse cx="600" cy="50" rx="60" ry="20"/><ellipse cx="690" cy="46" rx="50" ry="20"/></g>
+                  <g class="drop">
+                    <use href="#dropB" x="400" y="92"/><use href="#dropB" x="455" y="110"/><use href="#dropB" x="510" y="90"/><use href="#dropB" x="565" y="112"/><use href="#dropB" x="620" y="94"/><use href="#dropB" x="675" y="114"/>
+                    <use href="#dropB" x="425" y="128"/><use href="#dropB" x="540" y="132"/>
+                  </g>
+                  <path class="subsoil" d="M370 209 L710 289 L710 330 L370 330 Z"/>
+                  <path class="topsoil" d="M370 175 L710 255 L710 289 L370 209 Z"/>
+                  <g class="roots">
+                    <use href="#rootsB" x="400" y="182"/><use href="#rootsB" x="450" y="194"/><use href="#rootsB" x="500" y="206"/><use href="#rootsB" x="550" y="217"/>
+                    <use href="#rootsB" x="600" y="229"/><use href="#rootsB" x="650" y="241"/><use href="#rootsB" x="695" y="252"/>
+                  </g>
+                  <!-- residue on the ground -->
+                  <g class="residue"><path d="M412 186 l14 2"/><path d="M462 197 l15 4"/><path d="M515 209 l12 2"/><path d="M563 220 l15 3"/><path d="M613 232 l13 3"/><path d="M663 244 l14 3"/></g>
+                  <g class="plant">
+                    <use href="#plantB" x="400" y="182"/><use href="#plantB" x="450" y="194"/><use href="#plantB" x="500" y="206"/><use href="#plantB" x="550" y="217"/>
+                    <use href="#plantB" x="600" y="229"/><use href="#plantB" x="650" y="241"/><use href="#plantB" x="695" y="252"/>
+                  </g>
+                  <!-- water soaking in -->
+                  <g class="soak"><path d="M475 203 L475 240" marker-end="url(#arrB)"/><path d="M625 238 L625 275" marker-end="url(#arrB)"/></g>
+                  <text class="lbl" x="560" y="148">Leaves catch the rain</text>
+                  <text class="lbl-in" x="380" y="232" transform="rotate(13.2 380 232)">Thick topsoil</text>
+                  <text class="lbl-in" x="484" y="262">Water soaks in</text>
+                  <text class="lbl-in" x="560" y="310">Roots hold soil</text>
+                </g>
+              </g>
+            </svg>
+            <p>Rain soaks in and roots hold the soil.</p>
+          </figure>
+        </div>
       </div>
 
       <div class="how-help">
@@ -570,11 +631,11 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <!-- ?v= makes browsers fetch fresh files after each update. Change it whenever you change any js or css file. -->
-  <script src="js/indicators.js?v=20261114-13"></script>
-  <script src="js/scoring.js?v=20261114-13"></script>
-  <script src="js/storage.js?v=20261114-13"></script>
-  <script src="js/firebase-config.js?v=20261114-13"></script>
-  <script type="module" src="js/cloud.js?v=20261114-13"></script>
-  <script src="js/app.js?v=20261114-13"></script>
+  <script src="js/indicators.js?v=20261114-14"></script>
+  <script src="js/scoring.js?v=20261114-14"></script>
+  <script src="js/storage.js?v=20261114-14"></script>
+  <script src="js/firebase-config.js?v=20261114-14"></script>
+  <script type="module" src="js/cloud.js?v=20261114-14"></script>
+  <script src="js/app.js?v=20261114-14"></script>
 </body>
 </html>
