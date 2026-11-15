@@ -29,6 +29,8 @@ After changing any file in `js/` or `css/`, change the `?v=` number on the `<scr
 3. **Compare fixes**: five priority sliders and three rotation cards. Each card leads with how many warning signs it fixes (and any new one it adds), then the fit score, sub-scores and the five explanation boxes.
 4. **Why we believe this**: the soil health principle behind each warning sign, plus the full NASA POWER weather cards, soil survey, glossary, scoring rules and sources.
 
+Virginia fields also get a "Your local experts" box (Virginia Cooperative Extension office finder and the Southern Piedmont research center). A field you pick starts on the listed crop cycle closest to its USDA CropScape record. On step 1 you can also name a crop you want to grow: both alternatives will then include it, and a "How it fits this field" panel shows its calendar against your frost dates, its water need and its bare months. The tool gives no seeding rates, yields or prices.
+
 ## NASA data used
 
 | Dataset | How the tool uses it |

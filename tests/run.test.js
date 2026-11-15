@@ -254,3 +254,57 @@ test('a plan that covers every month has no bare step and its summary matches th
   assert.ok(summary.includes(`clears ${full.fixes.length} of the`));
   assert.ok(summary.includes(`${full.total}/100`));
 });
+
+test('the crop record picks the closest listed crop cycle', () => {
+  const history = JSON.parse(read('data/raw/cropscape_henry_va.json')).history;
+  const match = sc.matchRotation(history, rotations, 'east');
+  // Recorded: corn, soybean, wheat + double-crop soybean, sunflower. Four of those five are in this cycle.
+  assert.strictEqual(match.id, 'corn_soy_wheat');
+  assert.deepStrictEqual([...match.recorded].sort(), ['corn', 'soybean', 'soybean_double', 'sunflower', 'winter_wheat']);
+  // A western field is never matched to an eastern-only cycle.
+  const west = sc.matchRotation({ 2024: 'Alfalfa', 2025: 'Corn' }, rotations, 'west');
+  assert.ok(['west', 'any'].includes(rotations.find(r => r.id === west.id).region));
+  // Land cover that is not in our crop table gives no match instead of a guess.
+  assert.strictEqual(sc.matchRotation({ 2024: 'Deciduous Forest', 2025: null }, rotations, 'east'), null);
+  assert.strictEqual(sc.matchRotation(null, rotations, 'east'), null);
+});
+
+test('every CropScape name we map points at a crop in crops.csv', () => {
+  for (const ids of Object.values(sc.CDL_CROPS)) for (const id of ids) assert.ok(crops[id], `unknown crop ${id}`);
+});
+
+function henryField() {
+  return { id: 'henry_va', region: 'east', irrigated: false, texture: 'Sandy loam',
+           soil: JSON.parse(read('data/raw/soil_henry_va.json')),
+           ind: ind.computeFieldIndicators(JSON.parse(read('data/raw/power_henry_va.json')),
+                                           JSON.parse(read('data/raw/ndvi_henry_va.json'))) };
+}
+const evenWeights = { water: 3, soil: 3, income: 3, forage: 3, erosion: 3 };
+
+test('a wanted crop is in both alternatives and the current cycle is still shown', () => {
+  const results = sc.compareRotations(rotations, 'corn_soy', henryField(), evenWeights, { wantCrop: 'grain_sorghum' });
+  assert.strictEqual(results[0].rotation.id, 'corn_soy');
+  assert.ok(results.length >= 2);
+  for (const r of results.slice(1)) {
+    assert.ok(r.rotation.years.some(y => [y.main, y.winter].some(c => c && c.id === 'grain_sorghum')), r.rotation.id);
+  }
+  // With no wanted crop the answer is the same as before.
+  const plain = sc.compareRotations(rotations, 'corn_soy', henryField(), evenWeights, {});
+  assert.deepStrictEqual(sc.compareRotations(rotations, 'corn_soy', henryField(), evenWeights).map(r => r.rotation.id),
+                         plain.map(r => r.rotation.id));
+});
+
+test('crop fit lists the bare months of a summer crop and a cover crop from the table for the gap', () => {
+  const fit = sc.cropFit(crops.grain_sorghum, henryField(), crops);
+  assert.match(fit.bare[0], /Nov, Dec/);
+  assert.match(fit.bare[0], /Jan, Feb, Mar, Apr/);
+  assert.match(fit.bare[1], /Cereal rye/);
+  assert.match(fit.water[0], /Water need: /);
+  assert.strictEqual(fit.source, crops.grain_sorghum.source);
+  assert.strictEqual(sc.cropFit(crops.alfalfa, henryField(), crops).bare[0], 'Covers the soil every month.');
+});
+
+test('the peanut region note shows only on cycles with peanut', () => {
+  assert.strictEqual(sc.regionNotes(rotations.find(r => r.id === 'peanut_cotton_corn')).length, 1);
+  assert.strictEqual(sc.regionNotes(rotations.find(r => r.id === 'corn_soy')).length, 0);
+});

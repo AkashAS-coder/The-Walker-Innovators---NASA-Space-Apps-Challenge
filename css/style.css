@@ -318,7 +318,8 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.2; }
 .nav { position: sticky; top: 0; z-index: 30; background: rgba(255, 252, 246, .95); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; min-height: 64px; gap: 1rem; }
 .brand { display: inline-flex; align-items: center; gap: .5rem; font-size: 1.35rem; font-weight: 700; color: var(--soil-dark); text-decoration: none; }
-.brand-dot { width: 14px; height: 14px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--soil)); }
+.brand-mark { width: 34px; height: 34px; flex: none; }
+.brand-2 { color: var(--green); margin-left: .18em; }
 .nav-links { display: flex; gap: .25rem; margin-left: auto; }
 .nav-actions { display: flex; align-items: center; gap: .5rem; }
 .nav-links a {
@@ -757,3 +758,12 @@ details.define p { margin: .2rem 0 0; font-size: .9rem; }
 }
 
 .plan-now { margin: 0; padding: .7rem .9rem; border-radius: 8px; background: var(--green-soft); min-height: 3.2rem; }
+
+/* ---------- Virginia first, and "I want to grow ..." ---------- */
+.hero-note { margin: 1.1rem 0 0; font-size: .95rem; opacity: .9; max-width: 34rem; }
+.option .region-note { margin: .3rem 0 0; font-size: .9rem; padding: .5rem .7rem; border-left: 3px solid var(--gold); background: var(--brown-soft); border-radius: 4px; }
+.crop-fit h3, .local-experts h3 { margin-top: 0; }
+.fit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .8rem; margin: .8rem 0; }
+.fit-grid .box { margin: 0; }
+.local-experts ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+.local-experts li { margin: .4rem 0; }

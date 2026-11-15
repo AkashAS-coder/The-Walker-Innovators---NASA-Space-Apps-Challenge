@@ -25,6 +25,9 @@ Every dataset, web page and library used in this project.
 | USDA NRCS, "Soil Health" page: "reduce disturbance, maximize cover, promote biodiversity, and support living roots" | The basis for the four soil warning signs and the "Why we believe this" section | https://www.nrcs.usda.gov/conservation-basics/soil/soil-health |
 | NASA Earth Observatory, "Measuring Vegetation (NDVI & EVI)" | NDVI meaning and the bare-ground threshold | https://earthobservatory.nasa.gov/features/MeasuringVegetation |
 | U.S. Drought Monitor, county statistics for Henry County, VA (FIPS 51089), weekly, 2005–2025. Made by the National Drought Mitigation Center (University of Nebraska-Lincoln), USDA and NOAA; not a NASA product | Proof page only: an outside record to back-test our NASA-based dry-soil flag against. Saved to data/raw/drought_henry_va.json by src/fetch_drought.py | https://droughtmonitor.unl.edu/ · data service: https://usdmdataservices.unl.edu/api/CountyStatistics/GetDroughtSeverityStatisticsByAreaPercent |
+| Virginia Cooperative Extension, "Local Offices" page (opened and checked 2026-11-14) | The "Your local experts" box shown for Virginia fields | https://ext.vt.edu/offices.html |
+| Virginia Tech, Southern Piedmont Agricultural Research and Extension Center page: "research and Extension programs for sustainable production of tobacco", forage crops, beef cattle, small fruits and grains (opened and checked 2026-11-14) | The "Your local experts" box shown for Virginia fields | https://www.arec.vaes.vt.edu/arec/southern-piedmont.html |
+| Virginia Peanut Growers Association (an industry group, not a government source): "Peanuts in Virginia are grown in eight counties in southeast Virginia" (opened and checked 2026-11-14) | The note on crop cycles with peanut, shown for Virginia fields. We found no checked source for where cotton is grown, so cotton has no such note. | https://aboutpeanuts.com/virginia-peanuts/ |
 | CRESS grower survey (team's own, 16 anonymous responses, Nov 2026) | Problem statement (slides) and the "Who we asked" block on the Proof page, totals only. The responses are not in the repo. | — |
 
 ## Photos
@@ -33,6 +36,7 @@ All from the USDA Natural Resources Conservation Service (US government work, pu
 
 | File | Original | Link |
 | --- | --- | --- |
+| images/logo.svg | Field Shift logo, the team's own. Drawn as SVG code with Claude Code (see AI_USE.md); no outside artwork | — |
 | images/hero-field.jpg (shown mirrored) | Soybean Field with Healthy Soil (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Soybean_Field_with_Healthy_Soil_(9316804120).jpg |
 | images/erosion.jpg | Sheet erosion in an area of Coto soils (USDA NRCS, 2019) | https://commons.wikimedia.org/wiki/File:Sheet_erosion_in_an_area_of_Coto_soils_(20190402-SR-NRCS-001).jpg |
 | images/cover-crop.jpg | Soybeans coming up in a rye cover crop, May 2016 (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Soybeans_coming_up_in_a_rye_cover_crop_May_2016_(29614917692).jpg |

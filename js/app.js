@@ -6,6 +6,7 @@
 const state = {
   fields: [],
   crops: {},
+  rotationByFarmer: {}, // field id -> true once the farmer picked the crop cycle themselves
   rotations: [],
   cache: {},     // field id -> { ind, soil } so we only crunch the numbers once
   field: null,
@@ -99,7 +100,12 @@ function buildInputs() {
 
   $('texture-select').innerHTML = SOIL_TEXTURES.map(t => `<option>${t}</option>`).join('');
 
-  for (const id of ['rotation-select', 'texture-select', 'irrigated', 'no-hay', 'sells-forage']) {
+  // Once the farmer picks a crop cycle, the crop record no longer changes it for that field.
+  $('rotation-select').addEventListener('change', () => {
+    if (state.field) state.rotationByFarmer[state.field.id] = true;
+    $('rotation-note').textContent = '';
+  });
+  for (const id of ['rotation-select', 'texture-select', 'irrigated', 'no-hay', 'sells-forage', 'want-crop']) {
     $(id).addEventListener('change', render);
   }
 
@@ -147,7 +153,7 @@ function buildMap() {
       .on('click', () => { $('field-select').value = f.id; selectField(f.id); }));
   state.demoLayer = L.featureGroup(markers); // shown only in demo mode
   state.mapBounds = state.demoLayer.getBounds().pad(0.3);
-  map.fitBounds([[US.south, US.west], [US.north, US.east]]);
+  map.fitBounds(VIRGINIA_VIEW);
   map.on('click', e => pickPoint(e.latlng.lat, e.latlng.lng));
   state.map = map;
 }
@@ -181,6 +187,38 @@ function showHistory() {
     : '<p class="muted">Crop history could not be loaded for this spot right now.</p>';
 }
 
+// Is the field on screen in Virginia? A picked field: the soil survey area code starts with VA.
+// A saved example field: its place name says so.
+function inVirginia() {
+  if (!state.field) return false;
+  const soil = state.cache[state.field.id] && state.cache[state.field.id].soil;
+  return !!(soil && String(soil.areasymbol || '').startsWith('VA')) || /Virginia$/.test(state.field.place || '');
+}
+const agentWords = () => (inVirginia() ? 'Virginia Cooperative Extension agent' : 'extension agent');
+
+// A picked field starts on the listed crop cycle closest to its CropScape record (matchRotation in
+// scoring.js), unless the farmer has already chosen one. The note under the box says where it came from.
+function applyHistoryRotation() {
+  const f = state.field, c = f && state.cache[f.id];
+  $('rotation-note').textContent = '';
+  if (!f || !f.picked || !c.history || state.rotationByFarmer[f.id]) return false;
+  const match = matchRotation(c.history, state.rotations, f.region);
+  if (!match) return false;
+  f.default_rotation = match.id;
+  $('rotation-select').value = match.id;
+  $('rotation-note').textContent = 'From this field\'s crop record (USDA CropScape). Change it if wrong.';
+  return true;
+}
+
+// The crops a farmer can ask for: every crop that is in a listed crop cycle for this field's region.
+function fillWantCrop(field) {
+  const ids = new Set(state.rotations.filter(r => r.region === 'any' || r.region === field.region)
+    .flatMap(r => r.years.flatMap(y => [y.main, y.winter])).filter(Boolean).map(c => c.id));
+  const names = Object.values(state.crops).filter(c => ids.has(c.id)).sort((a, b) => a.name.localeCompare(b.name));
+  $('want-crop').innerHTML = '<option value="">No preference</option>' +
+    names.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+}
+
 const placeLine = field => `${field.place} · latitude ${field.lat}, longitude ${field.lon}`;
 
 // Fills the field page from a field that is already loaded in state.cache
@@ -195,6 +233,8 @@ function showField(field) {
     .filter(r => r.region === 'any' || r.region === field.region)
     .map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
   $('rotation-select').value = field.default_rotation;
+  fillWantCrop(field);
+  applyHistoryRotation();
   $('irrigated').checked = field.irrigated;
   $('sells-forage').checked = !!field.sells_forage;
   const soil = state.cache[id].soil;
@@ -214,13 +254,15 @@ function showField(field) {
 
 // Same request and years as src/fetch_power.py, so picked spots match the demo fields.
 const POWER_URL = 'https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,PRECTOTCORR,GWETROOT,GWETTOP&community=AG&start=20050101&end=20251231&format=JSON';
-// Same query as src/fetch_soil.py: the main soil at this point and its top layer.
+// Same query as src/fetch_soil.py (the main soil at this point and its top layer), plus the
+// soil survey area. Its code starts with the state's two letters (VA067), which tells us the state.
 const SOIL_URL = 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
 const soilQuery = (lat, lon) => `SELECT TOP 1 mu.mukey, mu.muname, mu.farmlndcl,
   c.compname, c.comppct_r, c.slope_r, c.drainagecl, c.hydgrp,
   h.hzdept_r, h.hzdepb_r, h.om_r, h.awc_r, h.kwfact,
-  h.sandtotal_r, h.silttotal_r, h.claytotal_r, tg.texdesc
+  h.sandtotal_r, h.silttotal_r, h.claytotal_r, tg.texdesc, l.areasymbol, l.areaname
 FROM mapunit mu
+JOIN legend l ON l.lkey = mu.lkey
 JOIN component c ON c.mukey = mu.mukey
 LEFT JOIN chorizon h ON h.cokey = c.cokey AND h.hzdept_r = 0
 LEFT JOIN chtexturegrp tg ON tg.chkey = h.chkey AND tg.rvindicator = 'Yes'
@@ -229,6 +271,9 @@ ORDER BY c.comppct_r DESC`;
 // A box around the lower 48 states: our crop list and the USDA soil survey cover only these.
 // A box also takes in edges of Canada and Mexico; there the soil survey simply has no record.
 const US = { south: 24.4, north: 49.5, west: -125, east: -66.9 };
+// Where the map opens: a box around Virginia, the team's home state. Only a starting view;
+// any field in the lower 48 can still be picked.
+const VIRGINIA_VIEW = [[36.5, -83.7], [39.5, -75.2]];
 // West of the 100th meridian is the classic dry-West line (Powell, 1878; see SOURCES.md).
 const DRY_WEST_LON = -100;
 
@@ -384,7 +429,7 @@ async function loadExtras(id, lat, lon) {
       c.history = history;
       c.historyState = history ? 'done' : 'failed';
       if (history) rememberField(id);
-      if (onScreen()) showHistory();
+      if (onScreen()) { showHistory(); if (applyHistoryRotation()) render(); }
     });
   }
   if (c.ndviRaw) return; // satellite greenness was saved on an earlier visit
@@ -677,7 +722,11 @@ const UNKNOWNS_SHOWN = 3;
 function renderOptions() {
   const field = currentField();
   const results = compareRotations(state.rotations, $('rotation-select').value, field, weights(),
-                                   { noHay: $('no-hay').checked });
+                                   { noHay: $('no-hay').checked, wantCrop: $('want-crop').value });
+  const want = state.crops[$('want-crop').value];
+  $('crop-fit').hidden = !want;
+  $('crop-fit').innerHTML = want ? cropFitPanel(want, field) : '';
+  renderLocalExperts();
   state.results = results; // kept so "Save to My farm" saves exactly what is on screen
   // Results changed. The chat stays; each question sends the newest numbers. Say so once.
   const lastInChat = $('helper-log').lastElementChild;
@@ -697,8 +746,10 @@ function renderOptions() {
   $('finding').innerHTML = answerCard(results);
   renderSoilCheck(results[0]);
 
-  const fewNote = results.length < 3
-    ? `<p class="muted">Only ${results.length - 1} alternative fits your region and limits. Untick "no hay equipment" to see more.</p>` : '';
+  const fewNote = results.length >= 3 ? ''
+    : want ? `<p class="muted">${results.length - 1 || 'No'} crop cycle${results.length === 2 ? '' : 's'} in our list with ${esc(want.name)} fit${results.length === 2 ? 's' : ''} your region and limits, besides what you grow now.</p>`
+    : `<p class="muted">Only ${results.length - 1} alternative fits your region and limits. Untick "no hay equipment" to see more.</p>`;
+  const virginia = inVirginia();
   const litNow = results[0].warnings.filter(w => w.lit).length;
   const label = id => results[0].warnings.find(w => w.id === id).label.toLowerCase();
   $('options').innerHTML = fewNote + results.map(r => {
@@ -706,21 +757,22 @@ function renderOptions() {
     const fixLine = r.isCurrent
       ? `<strong>${lit} of 4</strong> soil warning signs on`
       : litNow === 0 ? 'No warning signs to fix on this field'
-        : `Clears <strong>${r.fixes.length} of ${litNow}</strong> warning sign${litNow === 1 ? '' : 's'} under our rules`;
+        : `Clears <strong>${r.fixes.length} of ${litNow}</strong> warning sign${litNow === 1 ? '' : 's'}`;
     const addLine = r.adds.length ? `<p class="adds">Adds a new warning: ${r.adds.map(label).join(', ')}</p>` : '';
     return `
     <article class="option ${r.isCurrent ? 'current' : ''} ${!r.isCurrent && r.total === best ? 'best' : ''}">
       <span class="badge">${r.isCurrent ? 'What you grow now' : r.total === best ? 'Best fit for your priorities' : 'Alternative'}</span>
       <h3>${esc(r.rotation.name)}</h3>
       <p class="seq">${esc(sequenceText(r.rotation))}</p>
-      <p class="cover-line">Cover in the heavy-rain season (RUSLE C): <strong>${Math.round(r.sub.erosion.score)}%</strong>${r.isCurrent ? '' : ` <span class="muted">(now ${Math.round(results[0].sub.erosion.score)}%)</span>`}</p>
+      <p class="cover-line">Soil covered in heavy-rain season: <strong>${Math.round(r.sub.erosion.score)}%</strong>${r.isCurrent ? '' : ` <span class="muted">(now ${Math.round(results[0].sub.erosion.score)}%)</span>`}</p>
       <p class="fixes">${fixLine}</p>
       ${addLine}
-      <div class="fit"><span class="big">${r.total}</span><span class="muted">/ 100 fit for your priorities</span></div>
+      ${virginia ? regionNotes(r.rotation).map(n => `<p class="region-note">${esc(n.text)} <a href="${n.url}" target="_blank" rel="noopener">Source: ${esc(n.source)}</a></p>`).join('') : ''}
+      <div class="fit"><span class="big">${r.total}</span><span class="muted">/ 100 fit</span></div>
       <div class="box why"><h4>Why suggested</h4>${list(r.explain.why)}</div>
       <button type="button" class="btn choose" data-choose="${r.rotation.id}" data-label="${r.isCurrent ? 'Keep what I grow now' : 'Choose this plan'}"></button>
       <details class="evidence-more">
-        <summary>Evidence, benefits, what we don't know, what to check</summary>
+        <summary>Evidence, benefits, limits, local checks</summary>
         <div class="box evidence"><h4>Evidence</h4>${list(r.explain.evidence)}</div>
         <div class="box benefits"><h4>Benefits</h4>${list(r.explain.benefits)}</div>
         <div class="box unknowns"><h4>What we don't know</h4>${list(r.explain.unknowns.slice(0, UNKNOWNS_SHOWN))}
@@ -797,6 +849,34 @@ function renderSoilCheck(current) {
     </div>`).join('');
 }
 
+// "I want to grow ...": how the chosen crop fits this field (words from cropFit in scoring.js).
+function cropFitPanel(crop, field) {
+  const fit = cropFit(crop, field, state.crops);
+  const block = (title, lines) => `<div class="box"><h4>${title}</h4>${list(lines)}</div>`;
+  return `<h3>How ${esc(crop.name)} fits this field</h3>
+    <p class="small muted">Worth checking with your ${agentWords()}. Not advice to plant it.</p>
+    <div class="fit-grid">
+      ${block('Calendar and frost', fit.calendar)}
+      ${block('Water', fit.water)}
+      ${block('Bare months', fit.bare)}
+    </div>
+    <p class="small muted">${esc(fit.notGiven)} ${fit.source ? `<a href="${esc(fit.source)}" target="_blank" rel="noopener">Crop guide</a>` : 'No source link for this crop.'}</p>`;
+}
+
+// Virginia fields get the people to take the results to. Both links were opened and checked (SOURCES.md).
+function renderLocalExperts() {
+  const va = inVirginia();
+  $('local-experts').hidden = !va;
+  for (const el of document.querySelectorAll('.ext-agent')) el.textContent = agentWords();
+  if (!va) return;
+  $('local-experts').innerHTML = `<h3>Your local experts</h3>
+    <p>Take these results to people who know Virginia soils and markets.</p>
+    <ul>
+      <li><a href="https://ext.vt.edu/offices.html" target="_blank" rel="noopener">Find your county's Virginia Cooperative Extension office</a></li>
+      <li><a href="https://www.arec.vaes.vt.edu/arec/southern-piedmont.html" target="_blank" rel="noopener">Southern Piedmont research center</a> (Virginia Tech, Blackstone)</li>
+    </ul>`;
+}
+
 // The "Your answer" card at the top of Compare: three short lines (the words come from
 // answerLines in scoring.js) and the reminder that the farmer and local experts decide.
 function answerCard(results) {
@@ -810,8 +890,8 @@ function answerCard(results) {
       ${line('Option worth a look', a.option)}
       ${line('Check locally first', a.check)}
     </ol>
-    <p class="answer-trail">Worked out from NASA POWER rain and soil wetness, MODIS satellite greenness, the USDA soil survey and our crop table. <a href="#proof">See the proof and the limits</a>.</p>
-    <p class="answer-note">This supports your decision. It does not replace your judgment or your local extension agent.</p>`;
+    <p class="answer-trail">From NASA POWER, MODIS, the USDA soil survey and our crop table. <a href="#proof">Proof and limits</a></p>
+    <p class="answer-note">This supports your decision. It does not replace your judgment or your local ${agentWords()}.</p>`;
 }
 
 // ---------- pages ----------
@@ -850,7 +930,7 @@ function showPage() {
     // Keep the farmer's own spot in view; otherwise show the two demo fields.
     if (state.field && state.field.picked) state.map.setView([state.field.lat, state.field.lon], Math.max(state.map.getZoom(), 14));
     else if (state.field) state.map.fitBounds(state.mapBounds);
-    else state.map.fitBounds([[US.south, US.west], [US.north, US.east]]);
+    else state.map.fitBounds(VIRGINIA_VIEW);
   }
   Object.values(state.charts).forEach(c => c && c.resize());
   if (id === 'myfarm') renderSaved();
@@ -1001,6 +1081,8 @@ async function restoreCheck(id) {
     $('field-select').value = c.fieldId;
     await selectField(c.fieldId);
   }
+  state.rotationByFarmer[state.field.id] = true; // a saved check keeps its own crop cycle
+  $('rotation-note').textContent = '';
   $('rotation-select').value = c.rotationId;
   // A saved crop cycle can drop out of the list (the crop table changed). Say so instead of silently swapping it.
   const lostCycle = $('rotation-select').value !== c.rotationId;

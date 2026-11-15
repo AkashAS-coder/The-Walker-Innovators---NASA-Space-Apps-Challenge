@@ -317,7 +317,7 @@ function buildExplanation(result, current, field, weights) {
     .sort((a, b) => weights[b] * result.sub[b].score - weights[a] * result.sub[a].score);
 
   const why = isCurrent
-    ? ['This is what you grow now. It is shown so you can compare every option against it.']
+    ? ['What you grow now, shown for comparison.']
     : [`Scores well on what you weighted most: ${ranked.slice(0, 2)
         .map(k => `${PRIORITIES[k].toLowerCase()} (${round(result.sub[k].score)})`).join(' and ')}.`,
        r.description];
@@ -519,8 +519,10 @@ function compareRotations(rotations, currentId, field, weights, constraints = {}
   const inRegion = r => !field.region || r.region === 'any' || r.region === field.region;
   const allowed = r => inRegion(r) && !(constraints.noHay && allCrops(r).some(c => c.role === 'forage'));
   const current = scoreRotation(rotations.find(r => r.id === currentId), field, weights);
+  // "I want to grow ...": when the farmer names a crop, both alternatives must include it.
+  const wanted = r => !constraints.wantCrop || allCrops(r).some(c => c.id === constraints.wantCrop);
   const alternatives = rotations
-    .filter(r => r.id !== currentId && allowed(r))
+    .filter(r => r.id !== currentId && allowed(r) && wanted(r))
     .map(r => scoreRotation(r, field, weights))
     .sort((a, b) => b.total - a.total)
     .slice(0, 2);
@@ -554,17 +556,17 @@ function answerLines(results) {
   if (!top || top.total <= current.total) {
     return {
       risk,
-      option: `What you grow now (${current.total}/100) already fits your priorities as well as any option we checked. Moving the sliders may change that.`,
+      option: `What you grow now (${current.total}/100) fits your priorities as well as any option we checked.`,
       check: current.explain.checkLocally[0],
     };
   }
   const label = id => current.warnings.find(w => w.id === id).label.toLowerCase();
   const clears = lit.length && top.fixes.length
-    ? ` Under our rules it clears ${top.fixes.length} of the ${lit.length} warning sign${lit.length === 1 ? '' : 's'} that ${lit.length === 1 ? 'is' : 'are'} on now.` : '';
-  const adds = top.adds.length ? ` It would turn on a new one: ${top.adds.map(label).join(', ')}.` : '';
+    ? ` Clears ${top.fixes.length} of ${lit.length} warning sign${lit.length === 1 ? '' : 's'}.` : '';
+  const adds = top.adds.length ? ` Adds one: ${top.adds.map(label).join(', ')}.` : '';
   return {
     risk,
-    option: `“${top.rotation.name}” scores ${top.total}/100 for your priorities, against ${current.total} for what you grow now.${clears}${adds}`,
+    option: `“${top.rotation.name}”: ${top.total}/100 fit, against ${current.total} now.${clears}${adds}`,
     check: top.explain.checkLocally[0],
   };
 }
@@ -676,9 +678,102 @@ function planSteps(result, current, field) {
   return steps;
 }
 
+// ---------- matching the field's crop record to a crop cycle ----------
+
+// USDA CropScape class names -> crop ids in data/crops.csv. A double-crop class counts as both crops.
+// Names not listed here (pasture, forest, other hay ...) are ignored, never guessed.
+const CDL_CROPS = {
+  'Corn': ['corn'], 'Soybeans': ['soybean'], 'Winter Wheat': ['winter_wheat'],
+  'Dbl Crop WinWht/Soybeans': ['winter_wheat', 'soybean_double'],
+  'Dbl Crop Barley/Soybeans': ['barley', 'soybean_double'],
+  'Dbl Crop WinWht/Corn': ['winter_wheat', 'corn'], 'Dbl Crop WinWht/Sorghum': ['winter_wheat', 'grain_sorghum'],
+  'Sorghum': ['grain_sorghum'], 'Alfalfa': ['alfalfa'], 'Cotton': ['cotton'], 'Peanuts': ['peanut'],
+  'Barley': ['barley'], 'Oats': ['oats_spring'], 'Sunflower': ['sunflower'], 'Sunflowers': ['sunflower'],
+  'Canola': ['canola'], 'Tobacco': ['tobacco'], 'Potatoes': ['potato'], 'Triticale': ['triticale'],
+  'Rye': ['cereal_rye'], 'Buckwheat': ['buckwheat'],
+};
+
+// Picks the listed crop cycle closest to what CropScape recorded on the field.
+// Rule: crops in both lists divided by crops in either list; the highest share wins, the first listed wins a tie.
+// Cover crops in a cycle are left out because CropScape does not record them.
+// history: { "2016": "Corn", ... }. Returns { id, name, recorded: [crop ids] } or null when no recorded crop is in our table.
+function matchRotation(history, rotations, region) {
+  const recorded = new Set(Object.values(history || {}).flatMap(name => CDL_CROPS[name] || []));
+  if (!recorded.size) return null;
+  let best = null;
+  for (const r of rotations) {
+    if (region && r.region !== 'any' && r.region !== region) continue;
+    const grown = new Set(allCrops(r).filter(c => c.role !== 'cover').map(c => c.id));
+    const shared = [...grown].filter(id => recorded.has(id)).length;
+    const share = shared / new Set([...grown, ...recorded]).size;
+    if (shared && (!best || share > best.share)) best = { id: r.id, name: r.name, share };
+  }
+  return best && { id: best.id, name: best.name, recorded: [...recorded] };
+}
+
+// ---------- notes about where a crop is grown ----------
+
+// A note shown on any Virginia field when a crop cycle includes the crop. The words come from the
+// source; the tool does not decide whether the field's county is one of them.
+const VIRGINIA_CROP_NOTES = {
+  peanut: {
+    text: 'Virginia peanuts are grown in eight counties in southeast Virginia. Check whether your county is one of them.',
+    source: 'Virginia Peanut Growers Association',
+    url: 'https://aboutpeanuts.com/virginia-peanuts/',
+  },
+};
+
+// The notes that apply to one crop cycle (empty when none do).
+function regionNotes(rotation) {
+  return uniqueCrops(rotation).filter(c => VIRGINIA_CROP_NOTES[c.id]).map(c => VIRGINIA_CROP_NOTES[c.id]);
+}
+
+// ---------- "I want to grow ...": how one crop fits this field ----------
+
+// Facts about one crop on this field, built only from the crop table and the field's NASA numbers.
+// crops: the whole crop table (to look for a cover crop that fits the bare months).
+// Returns { calendar: [..], water: [..], bare: [..], notGiven, source }. No rates, yields or prices: none are in our data.
+function cropFit(crop, field, crops) {
+  const one = { years: [{ main: crop, winter: null }] };
+  const last = field.ind.medianLastSpringFrost, first = field.ind.medianFirstFallFrost;
+  const calendar = [crop.season === 'perennial'
+    ? 'In the ground all year (crop table).'
+    : `In the ground ${MONTHS[crop.start - 1]} to ${MONTHS[crop.end - 1]} (crop table).`];
+  if (last !== null && first !== null) {
+    calendar.push(`Usual frost-free season here: ${dayToDateLabel(last)} to ${dayToDateLabel(first)}, ` +
+                  `${first - last - 1} days (NASA POWER, median year).`);
+  } else {
+    calendar.push('No regular frost dates here in NASA POWER, so frost is not checked.');
+  }
+  const risks = frostRisks(one, field);
+  calendar.push(...(risks.length ? risks
+    : [crop.frost === 1 ? 'Fits inside it in a usual year.'
+                        : `Frost tolerance: ${crop.frost_tolerance} (crop table), so no frost flag.`]));
+
+  const water = [`Water need: ${crop.water_need} (crop table).`, ...scoreWater(one, field).reasons.slice(1)];
+  if (field.irrigated) water.push('Irrigated field, so dry months are not counted against it.');
+  else if (water.length === 1) water.push('No dry-summer or sandy-soil penalty on this field.');
+
+  const bareMonths = MONTHS.map((_, i) => i + 1).filter(m => !inWindow(crop, m));
+  const bare = [];
+  if (!bareMonths.length) bare.push('Covers the soil every month.');
+  else {
+    bare.push(`Bare when grown alone: ${bareMonths.map(m => MONTHS[m - 1]).join(', ')}.`);
+    const covers = Object.values(crops).filter(c => c.role === 'cover')
+      .map(c => ({ c, n: bareMonths.filter(m => inWindow(c, m)).length }))
+      .filter(x => x.n).sort((a, b) => b.n - a.n).slice(0, 2);
+    bare.push(covers.length
+      ? `Cover crops that grow then: ${covers.map(x => `${x.c.name.replace(/ \(.*\)$/, '')} (${x.n} of ${bareMonths.length} months)`).join(', ')}.`
+      : 'No cover crop in our table grows then.');
+  }
+  return { calendar, water, bare, source: crop.source,
+           notGiven: 'No seeding rates, fertilizer amounts, yields or prices: none are in our data with a source.' };
+}
+
 // In the browser dayToDateLabel comes from indicators.js; in Node we load it.
 if (typeof module !== 'undefined') {
   ({ dayToDateLabel, THRESHOLDS } = require('./indicators.js'));
   module.exports = { LEVEL, PRIORITIES, RULES, SOIL_TEXTURES, parseCsv, parseCrops, parseRotations, inWindow,
-    coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths, soilWarnings, erosionFactors, answerLines, planCalendar, planSteps };
+    coverageByMonth, scoreRotation, compareRotations, frostRisks, vulnerableMonths, soilWarnings, erosionFactors, answerLines, planCalendar, planSteps,
+    CDL_CROPS, matchRotation, regionNotes, cropFit };
 }

@@ -9,14 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%228%22 fill=%22%235b3a21%22/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/style.css?v=20261114-24">
+  <link rel="icon" type="image/svg+xml" href="images/logo.svg">
+  <link rel="stylesheet" href="css/style.css?v=20261114-27">
 </head>
 <body>
   <!-- Top navigation: one link per page. app.js shows one page at a time from the #hash. -->
   <nav class="nav" aria-label="Main">
     <div class="wrap nav-inner">
-      <a class="brand" href="#home"><span class="brand-dot" aria-hidden="true"></span>Field Shift</a>
+      <a class="brand" href="#home"><svg class="brand-mark" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><clipPath id="fs-nav"><rect width="32" height="32" rx="8"/></clipPath></defs><g clip-path="url(#fs-nav)"><rect width="32" height="32" fill="#2f6b3a"/><path d="M0 21q8-4 16-1t16-1v13H0z" fill="#5b3a21"/><path d="M0 25.5q8-4 16-1t16-1M0 30q8-4 16-1t16-1" fill="none" stroke="#e9d9b0" stroke-width="1.4" stroke-linecap="round"/><path d="M16 20.5V11" stroke="#f4f1e6" stroke-width="2" stroke-linecap="round"/><path d="M16 14.5c-4 0-6.8-2.500-6.800-6.300 3.800 0 6.800 2.300 6.800 6.300z" fill="#cfe6a8"/><path d="M16 11.500c0-3.800 2.700-6.500 6.800-6.500 0 4-2.700 6.500-6.800 6.500z" fill="#f4f1e6"/></g></svg><span>Field<span class="brand-2">Shift</span></span></a>
       <div class="nav-links" id="nav-links">
         <a href="#home" data-nav="home">Home</a>
         <a href="#how" data-nav="how">How it works</a>
@@ -42,7 +42,7 @@
     <section class="page" data-page="home">
       <div class="hero">
         <div class="wrap hero-inner">
-          <p class="eyebrow">Free soil check for your field</p>
+          <p class="eyebrow">Free soil check, built for Virginia farms</p>
           <h1>Is your topsoil washing away?</h1>
           <p class="hero-lead">See how well your field is covered when heavy rain hits, then compare crop cycles that hold more soil in place.</p>
           <div class="hero-actions">
@@ -50,15 +50,16 @@
             <button type="button" class="btn btn-ghost show-example">See an example Virginia field</button>
             <a class="btn btn-ghost" href="#how">How it works</a>
           </div>
+          <p class="hero-note">Made in Martinsville, Virginia. Works for any field in the lower 48 states.</p>
         </div>
       </div>
 
       <!-- Big numbers: each one is a plain fact about the data or the tool -->
       <div class="wrap">
         <dl class="stat-row">
-          <div><dt>21 years</dt><dd>of daily NASA weather for your field</dd></div>
-          <div><dt>16 days</dt><dd>between NASA satellite pictures of your field's greenness</dd></div>
-          <div><dt>3 cycles</dt><dd>compared side by side, including yours</dd></div>
+          <div><dt>21 years</dt><dd>of daily NASA weather</dd></div>
+          <div><dt>16 days</dt><dd>between NASA satellite pictures</dd></div>
+          <div><dt>3 cycles</dt><dd>compared, including yours</dd></div>
         </dl>
       </div>
 
@@ -274,8 +275,7 @@
           <button class="btn btn-primary" type="submit" id="find-go">Find</button>
           <button class="btn btn-ghost" type="button" id="find-me">Use my location</button>
         </form>
-        <p class="small muted">Or scroll the map and click your field. We don't save your address.</p>
-        <p class="small">Just looking? <button type="button" class="link-btn show-example">See an example Virginia field</button> with saved NASA data.</p>
+        <p class="small muted">Or click your field on the map (any field in the lower 48). We don't save your address. <button type="button" class="link-btn show-example">See an example Virginia field</button></p>
         <p id="find-msg" class="find-msg" role="status" aria-live="polite"></p>
       </div>
 
@@ -293,6 +293,10 @@
 
           <label for="rotation-select">What you grow now</label>
           <select id="rotation-select"></select>
+          <p id="rotation-note" class="small muted" aria-live="polite"></p>
+
+          <label for="want-crop">A crop you want to grow (optional)</label>
+          <select id="want-crop"></select>
 
           <div class="checks">
             <label><input type="checkbox" id="irrigated"> My field is irrigated</label>
@@ -398,8 +402,10 @@
         </details>
       </div>
 
-      <p class="small muted scores-note"><strong>Scores (0–100)</strong> come from written rules, not AI, and are untested on real farms. Use them to start a talk with your extension agent.</p>
+      <p class="small muted scores-note"><strong>Scores (0–100)</strong> come from written rules, not AI, and are untested on real farms.</p>
+      <section id="crop-fit" class="crop-fit panel-card" aria-live="polite" hidden></section>
       <div id="options" class="options"></div>
+      <section id="local-experts" class="local-experts panel-card" hidden></section>
 
       <div class="step-nav">
         <a class="btn btn-ghost" href="#year">Back</a>
@@ -716,11 +722,11 @@
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <!-- ?v= makes browsers fetch fresh files after each update. Change it whenever you change any js or css file. -->
-  <script defer src="js/indicators.js?v=20261114-24"></script>
-  <script defer src="js/scoring.js?v=20261114-24"></script>
-  <script defer src="js/storage.js?v=20261114-24"></script>
-  <script defer src="js/firebase-config.js?v=20261114-24"></script>
-  <script type="module" src="js/cloud.js?v=20261114-24"></script>
-  <script defer src="js/app.js?v=20261114-24"></script>
+  <script defer src="js/indicators.js?v=20261114-27"></script>
+  <script defer src="js/scoring.js?v=20261114-27"></script>
+  <script defer src="js/storage.js?v=20261114-27"></script>
+  <script defer src="js/firebase-config.js?v=20261114-27"></script>
+  <script type="module" src="js/cloud.js?v=20261114-27"></script>
+  <script defer src="js/app.js?v=20261114-27"></script>
 </body>
 </html>
