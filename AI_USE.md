@@ -56,3 +56,4 @@
 - 2026-11-15, Claude Code, index.html and README.md: removed the comma from the chat header text "AI can be wrong".
 - 2026-11-15, Claude Code, index.html, README.md, CLAUDE.md, SOURCES.md, netlify/functions/ask.mjs, css/style.css, images/logo.svg: renamed the app from "Field Shift" to "CRESS" (page title, header, AI helper prompt). The challenge name "Field Shift: Adapting Farms with NASA Data" is unchanged.
 - 2026-11-15, Claude Code, .gitignore, images/logo.svg, js/indicators.js, docs/PLAN.md, docs/CROP_CHECK.md: stopped publishing the AI tool settings files (CLAUDE.md, .claude/) and reworded tool-name mentions in comments and notes. This log and the SOURCES.md note still disclose AI use.
+- 2026-11-15, Claude Code, netlify/functions/ask.mjs: added a rule telling the AI helper to refuse questions not about the field results.
