@@ -61,3 +61,12 @@ The "Why cover matters" diagram on the How it works page is our own drawing (inl
 | OpenRouter API, free models (google/gemma-4-31b-it:free, with nvidia/nemotron-3.5-lightning:free and google/gemma-4-26b-a4b-it:free as backups), for the optional "Ask AI" helper | — | OpenRouter terms; Gemma terms of use | https://openrouter.ai/ |
 | Netlify (hosting and Netlify Functions for the AI helper) | — | Netlify terms | https://www.netlify.com/ |
 | Chama Verde (another NASA Space Apps team's site): layout idea only for the home page (sand and deep-green colors, big-number row, dark "How it works." band, closing button). No code, text or assets copied | — | — | https://chama-verde.netlify.app/ |
+
+## Demo slide deck (docs/Field-Shift-demo.pptx)
+
+Built with PptxGenJS (MIT, https://gitbrent.github.io/PptxGenJS/) and sharp (Apache-2.0, https://sharp.pixelplumbing.com/) for resizing; neither is used by the app. The app screenshots in `docs/slides-media/app-*.png` are our own, taken from https://cresstech.netlify.app on 2026-11-15. The two photos below are US government works in the public domain, downloaded from Wikimedia Commons and resized.
+
+| File | What it is | Link |
+| --- | --- | --- |
+| docs/slides-media/runoff.jpg | Runoff of soil and fertilizer from a farm field after heavy rain (photo by Lynn Betts, USDA NRCS; public domain) | https://commons.wikimedia.org/wiki/File:Runoff_of_soil_%26_fertilizer.jpg |
+| docs/slides-media/rye-notill.jpg | Terminated Cereal Rye & No-Till: seedlings coming up through rye residue (USDA; public domain) | https://commons.wikimedia.org/wiki/File:Terminated_Cereal_Rye_%26_No-Till_(52017760718).jpg |
