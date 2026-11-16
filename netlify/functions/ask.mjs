@@ -24,7 +24,7 @@ const MAX_ANSWER_TOKENS = 3000;
 const MAX_THINKING_TOKENS = 500; // cap on that hidden thinking, so the answer always has room
 
 // What the helper is told before every conversation. It keeps the helper inside our rules.
-const HELPER_RULES = `You help a farmer read the results of the Field Shift Rotation Explorer, a rule-based tool
+const HELPER_RULES = `You help a farmer read the results of CRESS (Soil Erosion Check), a rule-based tool
 that compares three crop rotations for one field using NASA POWER weather data, MODIS greenness data,
 USDA soil survey data and a crop-traits table.
 Rules you must follow:
@@ -53,7 +53,7 @@ function fromOurSite(req) {
 
 export default async req => {
   if (req.method !== 'POST') return reply(405, { error: 'Use POST.' });
-  if (!fromOurSite(req)) return reply(403, { error: 'Requests must come from the Field Shift site.' });
+  if (!fromOurSite(req)) return reply(403, { error: 'Requests must come from the CRESS site.' });
 
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) return reply(503, { error: 'not-set-up' });
@@ -78,7 +78,7 @@ export default async req => {
       headers: {
         authorization: `Bearer ${key}`,
         'content-type': 'application/json',
-        'x-title': 'Field Shift Rotation Explorer',
+        'x-title': 'CRESS Soil Erosion Check',
       },
       body: JSON.stringify({
         models,

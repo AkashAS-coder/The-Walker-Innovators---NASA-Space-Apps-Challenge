@@ -36,7 +36,7 @@ All from the USDA Natural Resources Conservation Service (US government work, pu
 
 | File | Original | Link |
 | --- | --- | --- |
-| images/logo.svg | Field Shift logo, the team's own. Drawn as SVG code with Claude Code (see AI_USE.md); no outside artwork | — |
+| images/logo.svg | CRESS logo, the team's own. Drawn as SVG code with Claude Code (see AI_USE.md); no outside artwork | — |
 | images/hero-field.jpg (shown mirrored) | Soybean Field with Healthy Soil (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Soybean_Field_with_Healthy_Soil_(9316804120).jpg |
 | images/erosion.jpg | Sheet erosion in an area of Coto soils (USDA NRCS, 2019) | https://commons.wikimedia.org/wiki/File:Sheet_erosion_in_an_area_of_Coto_soils_(20190402-SR-NRCS-001).jpg |
 | images/cover-crop.jpg | Soybeans coming up in a rye cover crop, May 2016 (USDA NRCS) | https://commons.wikimedia.org/wiki/File:Soybeans_coming_up_in_a_rye_cover_crop_May_2016_(29614917692).jpg |
