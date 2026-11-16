@@ -147,9 +147,9 @@ WaterWise (Best Use of Data, 2024) gave irrigated, mostly western farms a wateri
 
 **If we fall behind, cut in this order:** Level 3, then the second region, then CropScape (type the rotation in by hand instead). **Never cut** the three-card comparison, the five boxes, or POWER and NDVI.
 
-### Work split (two people, each with Claude Code)
+### Work split (two people, each with an AI coding assistant)
 
-Right now two of us are building, each in our own Claude Code session. Each person owns separate files so the two sessions never edit the same file.
+Right now two of us are building, each in our own AI assistant session. Each person owns separate files so the two sessions never edit the same file.
 
 **Person A: Data + Story**
 
@@ -173,7 +173,7 @@ Right now two of us are building, each in our own Claude Code session. Each pers
 | 5 | Connect A's real indicators, then run it end to end | `app.py` |
 | 6 | Saturday evening: map and charts. Sunday: bug fixes and deploy | `app.py` |
 
-**Shared files:** `CLAUDE.md`, `AI_USE.md`, `RESOURCES.md`. Change these only in small commits, and pull right before you edit them.
+**Shared files:** `AI_USE.md`, `RESOURCES.md`. Change these only in small commits, and pull right before you edit them.
 
 **Agree first (5 minutes):** what `indicators.py` hands to `scoring.py`. Write the agreed keys at the top of `src/indicators.py`, for example:
 
@@ -189,14 +189,14 @@ Right now two of us are building, each in our own Claude Code session. Each pers
 
 B may test scoring with made-up numbers inside `tests/` only. The app itself shows only A's real data.
 
-**How to work with two Claude Code sessions**
+**How to work with two AI assistant sessions**
 
 1. Each person works in their own clone, on their own laptop.
-2. Start every session with: "Read CLAUDE.md and HANDOFF.md. I am Person A (data). Only edit my files." Use "Person B (app)" for the other one.
+2. Start every session with: "Read the team rules and HANDOFF.md. I am Person A (data). Only edit my files." Use "Person B (app)" for the other one.
 3. Before every push: `git pull --rebase origin main`, then `git push origin main`.
 4. Make small commits and push at least every hour, so `main` always works.
-5. If you get a merge conflict, stop and fix it together. Don't let Claude guess.
-6. No commit credits Claude (see CLAUDE.md).
+5. If you get a merge conflict, stop and fix it together. Don't let the AI guess.
+6. No commit credits the AI tool.
 
 **Meet-up points:** Sat 12:00 (A has indicators, B has layout) · Sat 1:30 (connect them: scoring on real indicators) · Sat 3:00 (end-to-end run, screenshot it) · Sun 10:00 (feature freeze) · Sun 2:00 (bug fixes only) · Sun 9:00 (submit).
 

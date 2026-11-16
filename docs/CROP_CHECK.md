@@ -1,6 +1,6 @@
 # Crop table check against sources
 
-This is a first-pass check of every trait in `data/crops.csv` against its two sources, done with Claude Code on Nov 14, 2026 (see `AI_USE.md`). **A team member still needs to confirm it.** Open each source at the page listed, check the claim, and then change `verified` to `yes` for that row.
+This is a first-pass check of every trait in `data/crops.csv` against its two sources, done with an AI coding assistant on Nov 14, 2026 (see `AI_USE.md`). **A team member still needs to confirm it.** Open each source at the page listed, check the claim, and then change `verified` to `yes` for that row.
 
 Sources:
 

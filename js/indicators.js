@@ -5,7 +5,7 @@
 
 const THRESHOLDS = {
   // 0 °C is the freezing point; a night at or below it is counted as a frost.
-  // Starting point from the team plan (CLAUDE.md). PRISM uses 0 °C for freeze dates too.
+  // Starting point from the team plan. PRISM uses 0 °C for freeze dates too.
   FROST_C: 0,
   // 32 °C is about 90 °F, a common "hot day" line for crops. Starting point from
   // the team plan; check crop-specific limits in the VCE Agronomy Handbook.
